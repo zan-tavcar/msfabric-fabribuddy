@@ -1,0 +1,12 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "Notebook",
+    "displayName": "FabriBuddy_Scan",
+    "description": "Scans the tenant read-only and stores what the FabriBuddy app shows."
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "f1b5c0de-0000-4000-8000-000000000002"
+  }
+}

@@ -1,0 +1,26 @@
+table Sales
+
+	column 'Sales Id'
+		dataType: string
+		sourceColumn: sales_id
+
+	column 'Order Date'
+		dataType: dateTime
+		sourceColumn: order_date
+
+	column 'Net Amount EUR'
+		dataType: decimal
+		sourceColumn: net_amount_eur
+		description: Net amount converted to EUR at order date
+
+	measure 'Net Sales EUR' = SUM(Sales[Net Amount EUR])
+		formatString: #,0.00 €
+
+	measure 'Net Sales EUR PY' = CALCULATE([Net Sales EUR], SAMEPERIODLASTYEAR('Date'[Date]))
+
+	partition Sales = entity
+		mode: directLake
+		source
+			entityName: fact_sales
+			schemaName: dbo
+			expressionSource: DatabaseQuery

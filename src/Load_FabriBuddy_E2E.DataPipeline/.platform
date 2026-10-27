@@ -1,0 +1,12 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "DataPipeline",
+    "displayName": "Load_FabriBuddy_E2E",
+    "description": "FabriBuddy's orchestration pipeline: schedule this one."
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "f1b5c0de-0000-4000-8000-000000000004"
+  }
+}

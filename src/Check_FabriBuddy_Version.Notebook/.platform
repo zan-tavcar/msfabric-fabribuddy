@@ -1,0 +1,12 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "Notebook",
+    "displayName": "Check_FabriBuddy_Version",
+    "description": "Compares the installed FabriBuddy release with the latest."
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "f1b5c0de-0000-4000-8000-000000000003"
+  }
+}

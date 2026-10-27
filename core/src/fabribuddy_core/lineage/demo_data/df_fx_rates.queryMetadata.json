@@ -1,0 +1,20 @@
+{
+  "formatVersion": "202502",
+  "queriesMetadata": {
+    "fx_rates": {
+      "queryId": "9f2a1c44-0000-4000-8000-000000000001",
+      "queryName": "fx_rates",
+      "isHidden": false,
+      "loadEnabled": true,
+      "dataDestination": {
+        "type": "Lakehouse",
+        "updateMethod": "Replace",
+        "typeProperties": {
+          "itemName": "lh_silver",
+          "schemaName": "ref",
+          "tableName": "fx_rates"
+        }
+      }
+    }
+  }
+}

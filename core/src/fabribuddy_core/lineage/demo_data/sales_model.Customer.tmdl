@@ -1,0 +1,21 @@
+table Customer
+
+	column 'Customer Key'
+		dataType: int64
+		sourceColumn: customer_key
+
+	column 'Customer Name'
+		dataType: string
+		sourceColumn: customer_name
+
+	column Country
+		dataType: string
+		sourceColumn: country_code
+		description: ISO country code, used by RLS
+
+	partition Customer = entity
+		mode: directLake
+		source
+			entityName: dim_customer
+			schemaName: dbo
+			expressionSource: DatabaseQuery

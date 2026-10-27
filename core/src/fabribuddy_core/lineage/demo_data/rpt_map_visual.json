@@ -1,0 +1,24 @@
+{
+  "name": "v-map-country",
+  "position": { "x": 0, "y": 0, "width": 640, "height": 360 },
+  "visual": {
+    "visualType": "filledMap",
+    "query": {
+      "queryState": {
+        "Category": {
+          "projections": [
+            { "field": { "Column": { "Expression": { "SourceRef": { "Entity": "Customer" } }, "Property": "Country" } }, "queryRef": "Customer.Country" }
+          ]
+        },
+        "Values": {
+          "projections": [
+            { "field": { "Measure": { "Expression": { "SourceRef": { "Entity": "Sales" } }, "Property": "Net Sales EUR" } }, "queryRef": "Sales.Net Sales EUR" }
+          ]
+        }
+      }
+    },
+    "visualContainerObjects": {
+      "title": [{ "properties": { "text": { "expr": { "Literal": { "Value": "'Net sales by country'" } } } } }]
+    }
+  }
+}

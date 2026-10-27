@@ -1,0 +1,20 @@
+node_modules
+dist
+*.tsbuildinfo
+.vite
+*.local
+public/local-chunks.json
+# Written by the Rayfin CLI on deploy: per-tenant ids and keys.
+rayfin/.env*
+rayfin/.deployments.json
+rayfin/.*.tmp
+rayfin/.temp/
+rayfin.config.json
+.env.fabric*
+.DS_Store
+# Written by `rayfin connector add` for your database (holds its connection string).
+rayfin/connectors/*/metadata.json
+# Rayfin's AI-assistant files and lockfile, added by the CLI.
+.agents/
+AGENTS.md
+rayfin/.lockfile.json

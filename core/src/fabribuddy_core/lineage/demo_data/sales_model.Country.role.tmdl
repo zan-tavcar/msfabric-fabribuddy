@@ -1,0 +1,4 @@
+role Country
+	modelPermission: read
+
+	tablePermission Customer = 'Customer'[Country] = USERPRINCIPALNAME()

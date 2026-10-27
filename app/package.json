@@ -1,0 +1,38 @@
+{
+  "name": "fabribuddy-fabric-app",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "FabriBuddy's Data Catalog and Report Audience as a Fabric App, reading what the scan notebook stored in a Fabric SQL database.",
+  "scripts": {
+    "sync-ui": "node scripts/sync-ui.mjs",
+    "dev:preview": "vite --mode preview",
+    "prebuild": "rayfin env --framework vite",
+    "build": "vite build",
+    "build:preview": "vite build --mode preview",
+    "typecheck": "tsc -b",
+    "deploy": "rayfin up",
+    "connect": "node scripts/connect-database.mjs"
+  },
+  "dependencies": {
+    "@microsoft/rayfin-auth": "1.36.2",
+    "@microsoft/rayfin-auth-provider-fabric": "1.36.2",
+    "@microsoft/rayfin-client": "1.36.2",
+    "@microsoft/rayfin-connector-fabric-graphql": "1.36.2",
+    "@microsoft/rayfin-connectors": "1.36.2",
+    "@microsoft/rayfin-core": "1.36.2",
+    "@microsoft/rayfin-data": "1.36.2",
+    "@microsoft/rayfin-lib": "1.36.2",
+    "lucide-react": "^0.468.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@microsoft/rayfin-cli": "1.36.2",
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "@vitejs/plugin-react": "^4.3.4",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.7"
+  }
+}

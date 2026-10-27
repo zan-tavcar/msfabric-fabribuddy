@@ -1,0 +1,19 @@
+{
+  "name": "v-table-customer",
+  "visual": {
+    "visualType": "tableEx",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            { "field": { "Column": { "Expression": { "SourceRef": { "Entity": "Customer" } }, "Property": "Customer Name" } } },
+            { "field": { "Measure": { "Expression": { "SourceRef": { "Entity": "Sales" } }, "Property": "Net Sales EUR" } } }
+          ]
+        }
+      }
+    },
+    "visualContainerObjects": {
+      "title": [{ "properties": { "text": { "expr": { "Literal": { "Value": "'Top 10 customers'" } } } } }]
+    }
+  }
+}

@@ -1,0 +1,21 @@
+# FabriBuddy's items, their deployment order, workspace folders and placeholder ids.
+# Read by scripts/Deploy_FabriBuddy.ipynb; written by core/tools/build_items.py.
+sql_database: FabriBuddy_DB
+items:
+- FabriBuddy_Scan.Notebook
+- Check_FabriBuddy_Version.Notebook
+- Load_FabriBuddy_E2E.DataPipeline
+folders:
+  Scan:
+  - Load_FabriBuddy_E2E.DataPipeline
+  - FabriBuddy_Scan.Notebook
+  Storage:
+  - FabriBuddy_DB.SQLDatabase
+  Maintenance:
+  - Check_FabriBuddy_Version.Notebook
+  - Deploy_FabriBuddy.Notebook
+ids:
+  workspace: f1b5c0de-0000-4000-8000-000000000001
+  FabriBuddy_Scan.Notebook: f1b5c0de-0000-4000-8000-000000000002
+  Check_FabriBuddy_Version.Notebook: f1b5c0de-0000-4000-8000-000000000003
+  Load_FabriBuddy_E2E.DataPipeline: f1b5c0de-0000-4000-8000-000000000004

@@ -1,0 +1,7 @@
+Alembic owns the schema.
+
+  alembic upgrade head          apply migrations
+  alembic revision --autogenerate -m "what changed"
+
+create_all runs only for SQLite dev or with FL_AUTO_CREATE_SCHEMA=1 — never in
+production, so the two can never disagree about the truth.

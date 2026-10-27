@@ -1,0 +1,178 @@
+{
+  "properties": {
+    "activities": [
+      {
+        "name": "ForEach_Tables",
+        "type": "ForEach",
+        "typeProperties": {
+          "items": {
+            "value": "@pipeline().parameters.tables",
+            "type": "Expression"
+          },
+          "activities": [
+            {
+              "name": "Copy_CustTable",
+              "type": "Copy",
+              "typeProperties": {
+                "source": {
+                  "type": "SqlServerSource",
+                  "sqlReaderQuery": "SELECT * FROM dbo.CUSTTABLE WHERE MODIFIEDDATETIME > @{pipeline().parameters.watermark}",
+                  "datasetSettings": {
+                    "type": "SqlServerTable",
+                    "typeProperties": {
+                      "server": "sql-d365-prod.contoso.com",
+                      "database": "AXDB"
+                    },
+                    "externalReferences": {
+                      "connection": "d365-prod-sql"
+                    }
+                  }
+                },
+                "sink": {
+                  "type": "LakehouseTableSink",
+                  "tableActionOption": "Append",
+                  "datasetSettings": {
+                    "typeProperties": {
+                      "schema": "d365",
+                      "table": "custtable"
+                    },
+                    "linkedService": {
+                      "name": "lh_bronze"
+                    }
+                  }
+                },
+                "translator": {
+                  "type": "TabularTranslator",
+                  "mappings": [
+                    {
+                      "source": {
+                        "name": "ACCOUNTNUM"
+                      },
+                      "sink": {
+                        "name": "ACCOUNTNUM"
+                      }
+                    },
+                    {
+                      "source": {
+                        "name": "NAME"
+                      },
+                      "sink": {
+                        "name": "NAME"
+                      }
+                    },
+                    {
+                      "source": {
+                        "name": "EMAIL"
+                      },
+                      "sink": {
+                        "name": "EMAIL"
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Copy_SalesTable",
+              "type": "Copy",
+              "typeProperties": {
+                "source": {
+                  "type": "SqlServerSource",
+                  "sqlReaderQuery": "SELECT * FROM dbo.SALESTABLE WHERE MODIFIEDDATETIME > @{pipeline().parameters.watermark}",
+                  "datasetSettings": {
+                    "type": "SqlServerTable",
+                    "typeProperties": {
+                      "server": "sql-d365-prod.contoso.com",
+                      "database": "AXDB"
+                    },
+                    "externalReferences": {
+                      "connection": "d365-prod-sql"
+                    }
+                  }
+                },
+                "sink": {
+                  "type": "LakehouseTableSink",
+                  "tableActionOption": "Append",
+                  "datasetSettings": {
+                    "typeProperties": {
+                      "schema": "d365",
+                      "table": "salestable"
+                    },
+                    "linkedService": {
+                      "name": "lh_bronze"
+                    }
+                  }
+                },
+                "translator": {
+                  "type": "TabularTranslator",
+                  "mappings": "auto"
+                }
+              }
+            },
+            {
+              "name": "Copy_SalesLine",
+              "type": "Copy",
+              "typeProperties": {
+                "source": {
+                  "type": "SqlServerSource",
+                  "sqlReaderQuery": "SELECT * FROM dbo.SALESLINE",
+                  "datasetSettings": {
+                    "typeProperties": {
+                      "server": "sql-d365-prod.contoso.com",
+                      "database": "AXDB"
+                    }
+                  }
+                },
+                "sink": {
+                  "type": "LakehouseTableSink",
+                  "tableActionOption": "Append",
+                  "datasetSettings": {
+                    "typeProperties": {
+                      "schema": "d365",
+                      "table": "salesline"
+                    },
+                    "linkedService": {
+                      "name": "lh_bronze"
+                    }
+                  }
+                },
+                "translator": {
+                  "type": "TabularTranslator",
+                  "mappings": "auto"
+                }
+              }
+            }
+          ]
+        }
+      },
+      {
+        "name": "Run_Silver_Customers",
+        "type": "TridentNotebook",
+        "dependsOn": [
+          {
+            "activity": "ForEach_Tables",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ],
+        "typeProperties": {
+          "notebookId": "b1000000-0000-4000-8000-000000000001",
+          "parameters": {
+            "run_date": {
+              "value": "2026-09-19",
+              "type": "string"
+            }
+          }
+        }
+      },
+      {
+        "name": "Refresh_FX",
+        "type": "RefreshDataflow",
+        "typeProperties": {
+          "dataflowId": "d1000000-0000-4000-8000-000000000001"
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,26 @@
+# FabriBuddy as a Fabric App. `npm run connect -- <workspace-id> <sql-database-id>`
+# adds the `connectors:` entry for your FabriBuddy_DB; `npx rayfin up` creates the
+# app in your workspace, builds the interface and uploads it.
+id: fabribuddy
+name: FabriBuddy
+version: 0.1.0
+services:
+  auth:
+    enabled: true
+    fabric:
+      enabled: true
+    allowedRedirectUris:
+      - http://localhost:5173
+  data:
+    enabled: false
+  storage:
+    enabled: false
+  staticHosting:
+    enabled: true
+    folder: dist
+    buildCommand: npm run build
+    indexDocument: index.html
+    # Only people with access to the app in Fabric can load it.
+    assetAccess: protected
+  functions:
+    enabled: false

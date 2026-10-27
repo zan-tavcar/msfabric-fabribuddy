@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fabribuddy-core"
+version = "0.1.0"
+description = "FabriBuddy in your own Fabric tenant: the scanner and page logic behind the Data Catalog and Report Audience, run from a notebook."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+dependencies = [
+  # The web layer is used in-process only: the notebook asks the same API
+  # routes the SaaS serves, and stores their answers for the Fabric App.
+  "fastapi>=0.115",
+  "httpx>=0.27",
+  "msal>=1.31",
+  "requests>=2.32",
+  "sqlalchemy>=2.0.36",
+  "alembic>=1.14",
+  "python-dotenv>=1.0",
+  "sqlglot>=26.0",
+  "pyarrow>=14",
+  "psutil>=5.9",
+  "cryptography>=41",
+  # Fabric SQL database and warehouse SQL endpoints.
+  "mssql-python>=1.15",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"*" = ["*.ini", "*.mako", "*.json", "*.json.gz", "*.pq", "*.py", "*.pbir", "*.tmdl", "*.sql", "*.ipynb", "SOURCE"]

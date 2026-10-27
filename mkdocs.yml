@@ -1,0 +1,91 @@
+site_name: FabriBuddy
+site_description: A free, open-source Fabric App for Microsoft Fabric and Power BI. Table lineage, the code behind every table, and who can see every report, all inside your own tenant.
+site_url: https://zan-tavcar.github.io/msfabric-fabribuddy/
+repo_url: https://github.com/zan-tavcar/msfabric-fabribuddy
+repo_name: zan-tavcar/msfabric-fabribuddy
+edit_uri: edit/main/docs/
+copyright: FabriBuddy is free and open source under the MIT licence. Microsoft Fabric and Power BI are trademarks of Microsoft; FabriBuddy is independent and not affiliated with Microsoft.
+
+theme:
+  name: material
+  logo: assets/fabribuddy-mark.svg
+  favicon: assets/fabribuddy-mark.svg
+  font:
+    text: Inter
+    code: JetBrains Mono
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/weather-night
+        name: Dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/weather-sunny
+        name: Light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - navigation.footer
+    - navigation.indexes
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.action.edit
+    - toc.follow
+  icon:
+    repo: fontawesome/brands/github
+
+extra_css:
+  - stylesheets/extra.css
+
+nav:
+  - Home: index.md
+  - Your data stays in your tenant: data-stays-in-your-tenant.md
+  - Get started:
+      - Deploy: deploy.md
+      - Service principal: service-principal.md
+      - The app: app.md
+      - Settings: settings.md
+      - Update: update.md
+  - What it shows:
+      - Data Catalog: data-catalog.md
+      - Report Audience: report-audience.md
+  - Reference:
+      - How it works: how-it-works.md
+      - Troubleshooting: troubleshooting.md
+      - Contributing: contributing.md
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/zan-tavcar/msfabric-fabribuddy

@@ -1,0 +1,138 @@
+{
+  "properties": {
+    "activities": [
+      {
+        "name": "FabriBuddy_Scan",
+        "description": "Scans the tenant read-only and stores what the FabriBuddy app shows.",
+        "type": "TridentNotebook",
+        "dependsOn": [],
+        "policy": {
+          "timeout": "0.12:00:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "typeProperties": {
+          "notebookId": "f1b5c0de-0000-4000-8000-000000000002",
+          "workspaceId": "f1b5c0de-0000-4000-8000-000000000001",
+          "parameters": {
+            "key_vault_url": {
+              "value": {
+                "value": "@pipeline().parameters.key_vault_url",
+                "type": "Expression"
+              },
+              "type": "string"
+            },
+            "sp_tenant_id": {
+              "value": {
+                "value": "@pipeline().parameters.sp_tenant_id",
+                "type": "Expression"
+              },
+              "type": "string"
+            },
+            "sp_client_id": {
+              "value": {
+                "value": "@pipeline().parameters.sp_client_id",
+                "type": "Expression"
+              },
+              "type": "string"
+            },
+            "sp_secret_name": {
+              "value": {
+                "value": "@pipeline().parameters.sp_secret_name",
+                "type": "Expression"
+              },
+              "type": "string"
+            },
+            "workspaces": {
+              "value": {
+                "value": "@pipeline().parameters.workspaces",
+                "type": "Expression"
+              },
+              "type": "string"
+            },
+            "include_personal": {
+              "value": {
+                "value": "@pipeline().parameters.include_personal",
+                "type": "Expression"
+              },
+              "type": "bool"
+            },
+            "tenant_name": {
+              "value": {
+                "value": "@pipeline().parameters.tenant_name",
+                "type": "Expression"
+              },
+              "type": "string"
+            },
+            "full_refresh": {
+              "value": {
+                "value": "@pipeline().parameters.full_refresh",
+                "type": "Expression"
+              },
+              "type": "bool"
+            },
+            "demo": {
+              "value": {
+                "value": "@pipeline().parameters.demo",
+                "type": "Expression"
+              },
+              "type": "bool"
+            },
+            "sql_database_name": {
+              "value": {
+                "value": "@pipeline().parameters.sql_database_name",
+                "type": "Expression"
+              },
+              "type": "string"
+            }
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "key_vault_url": {
+        "type": "string",
+        "defaultValue": ""
+      },
+      "sp_tenant_id": {
+        "type": "string",
+        "defaultValue": ""
+      },
+      "sp_client_id": {
+        "type": "string",
+        "defaultValue": ""
+      },
+      "sp_secret_name": {
+        "type": "string",
+        "defaultValue": "fabribuddy-sp-secret"
+      },
+      "workspaces": {
+        "type": "string",
+        "defaultValue": ""
+      },
+      "include_personal": {
+        "type": "bool",
+        "defaultValue": false
+      },
+      "tenant_name": {
+        "type": "string",
+        "defaultValue": ""
+      },
+      "full_refresh": {
+        "type": "bool",
+        "defaultValue": false
+      },
+      "demo": {
+        "type": "bool",
+        "defaultValue": false
+      },
+      "sql_database_name": {
+        "type": "string",
+        "defaultValue": "FabriBuddy_DB"
+      }
+    },
+    "annotations": []
+  }
+}
