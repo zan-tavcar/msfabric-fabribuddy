@@ -325,13 +325,13 @@ first deployment and for every update.
 On an update, leave it empty: the settings already in the pipeline are kept.
 """),
     code(DEPLOY_SETTINGS, parameters=True),
-    md("### Fabric CLI and source files"),
+    md("### Source files"),
     code('''
-import json, os, re, shutil, subprocess, sys, tempfile, time, zipfile
+import base64, json, os, re, shutil, subprocess, sys, tempfile, time, zipfile
 from io import BytesIO
 import requests
 
-subprocess.check_call([sys.executable, "-m", "pip", "install", "--quiet", "--disable-pip-version-check", "ms-fabric-cli", "pyyaml"])
+subprocess.check_call([sys.executable, "-m", "pip", "install", "--quiet", "--disable-pip-version-check", "pyyaml"])
 import yaml
 
 # Download this repository (src, config, data, release) into a temporary folder.
@@ -353,18 +353,7 @@ print(f"FabriBuddy {release['version']} from {REPOSITORY}@{BRANCH}")
 '''),
     code(BOOTSTRAP),
     code('''
-def fab(command, capture=False, check=True, timeout=600):
-    """Run a Fabric CLI command as you."""
-    token = notebookutils.credentials.getToken("pbi")
-    env = {**os.environ, "FAB_TOKEN": token, "FAB_TOKEN_ONELAKE": token}
-    r = subprocess.run(["fab", "-c", command], capture_output=True, text=True, timeout=timeout, env=env)
-    if check and r.returncode != 0:
-        raise RuntimeError(f"fab {command.split()[0]} failed: {(r.stderr or r.stdout)[:600]}")
-    return r.stdout.strip() if capture else r
-
-
 WORKSPACE_NAME = fabric("GET", f"/workspaces/{WORKSPACE_ID}")["displayName"]
-WS = f"/{WORKSPACE_NAME}.Workspace"
 print(f"Deploying into: {WORKSPACE_NAME}")
 
 
@@ -375,6 +364,29 @@ def item_id(name):
         if item["displayName"] == display and item["type"] == kind:
             return item["id"]
     return None
+
+
+def import_item(name, folder, existing_id):
+    """Create item `name` from the files in `folder`, or update its definition."""
+    display, kind = name.rsplit(".", 1)
+    parts = []
+    for root, _, files in os.walk(folder):
+        for file in files:
+            path = os.path.join(root, file)
+            parts.append({
+                "path": os.path.relpath(path, folder).replace(os.sep, "/"),
+                "payload": base64.b64encode(open(path, "rb").read()).decode(),
+                "payloadType": "InlineBase64",
+            })
+    definition = {"parts": parts}
+    if kind == "Notebook":
+        definition["format"] = "ipynb"
+    if existing_id:
+        fabric("POST", f"/workspaces/{WORKSPACE_ID}/items/{existing_id}/updateDefinition?updateMetadata=true",
+               {"definition": definition})
+    else:
+        fabric("POST", f"/workspaces/{WORKSPACE_ID}/items",
+               {"displayName": display, "type": kind, "definition": definition})
 '''),
     md("### 1. FabriBuddy_DB"),
     code('''
@@ -447,8 +459,7 @@ for name in config["items"]:
             open(path, "w", encoding="utf-8").write(text)
     if name.endswith(".DataPipeline"):
         pipeline_settings(os.path.join(work, name, "pipeline-content.json"), existing)
-    fmt = " --format .ipynb" if name.endswith(".Notebook") else ""
-    fab(f'import "{WS}/{name}" -i "{os.path.join(work, name)}" -f{fmt}')
+    import_item(name, os.path.join(work, name), existing)
     new_id = item_id(name)
     mapping[config["ids"][name]] = new_id
     print(f"✓ {name} {'updated' if existing else 'created'}")
