@@ -13,6 +13,7 @@ Where every table comes from, the exact lines that write it, and who can see eve
 Shipped as a Fabric App that runs in your own tenant. Free and open source.</p>
 
 [Deploy FabriBuddy](deploy.md){ .md-button .md-button--primary }
+[Try the live demo](https://zan-tavcar.github.io/msfabric-fabribuddy/demo/){ .md-button }
 [See it on GitHub](https://github.com/zan-tavcar/msfabric-fabribuddy){ .md-button }
 
 </div>

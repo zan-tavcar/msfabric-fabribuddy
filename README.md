@@ -9,6 +9,7 @@
 </p>
 
 <p align="center">
+  <a href="https://zan-tavcar.github.io/msfabric-fabribuddy/demo/"><b>Live demo</b></a> ·
   <a href="https://zan-tavcar.github.io/msfabric-fabribuddy/"><b>Documentation</b></a> ·
   <a href="https://zan-tavcar.github.io/msfabric-fabribuddy/deploy/">Deploy</a> ·
   <a href="https://zan-tavcar.github.io/msfabric-fabribuddy/data-stays-in-your-tenant/">Your data stays in your tenant</a>

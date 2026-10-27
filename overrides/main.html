@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+
+{#- The eyebrow above each page title, as on fabriscope.com/docs. -#}
+{% block content %}
+  {% if not page.is_homepage %}
+    <p class="fb-eyebrow">Docs · Updated {{ config.extra.updated }}</p>
+  {% endif %}
+  {{ super() }}
+{% endblock %}

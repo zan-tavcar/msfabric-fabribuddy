@@ -57,7 +57,7 @@ export const fabricTransport: Transport = (path) => {
 export function localTransport(): Transport {
   let all: Promise<Record<string, string[]>> | null = null;
   return async (path) => {
-    all ??= fetch("/local-chunks.json").then((r) => r.json());
+    all ??= fetch(`${import.meta.env.BASE_URL}local-chunks.json`).then((r) => r.json());
     const chunks = (await all)[await key(path)];
     if (!chunks) throw new ApiError(NOT_STORED, 404);
     return answer(await unpack(chunks));

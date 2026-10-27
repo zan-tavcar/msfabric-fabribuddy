@@ -1,9 +1,9 @@
-name: Docs
+name: Docs and demo
 
 on:
   push:
     branches: [main]
-    paths: ["docs/**", "mkdocs.yml", ".github/workflows/docs.yml"]
+    paths: ["docs/**", "overrides/**", "mkdocs.yml", "app/**", "core/**", ".github/workflows/docs.yml"]
   workflow_dispatch:
 
 permissions:
@@ -25,6 +25,18 @@ jobs:
           python-version: "3.12"
       - run: pip install "mkdocs-material==9.6.*"
       - run: mkdocs build --strict
+      # The live demo: the app on the Contoso demo data, as a static site at /demo/.
+      - run: pip install -e core
+      - run: python core/tools/export_local.py app/public/local-chunks.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - run: npm ci
+        working-directory: app
+      - run: npx vite build --mode preview --base=/msfabric-fabribuddy/demo/ --outDir ../site/demo --emptyOutDir
+        working-directory: app
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
