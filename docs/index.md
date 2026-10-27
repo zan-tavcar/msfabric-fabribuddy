@@ -8,13 +8,20 @@ hide:
 
 <h1 class="fb-word"><img src="assets/fabribuddy-mark.svg" alt="" class="fb-mark"><span><span class="fb-fabri">fabri</span><span class="fb-buddy">buddy</span></span></h1>
 
-<p class="fb-tagline">Where every table in your Microsoft Fabric estate comes from, the code that writes it,
-and who can see every Power BI report. Free and open source.</p>
+<p class="fb-tagline"><strong>Data lineage for Microsoft Fabric, reverse-engineered from your code.</strong>
+Where every table comes from, the exact lines that write it, and who can see every Power BI report.
+Shipped as a Fabric App that runs in your own tenant. Free and open source.</p>
 
 [Deploy FabriBuddy](deploy.md){ .md-button .md-button--primary }
 [See it on GitHub](https://github.com/zan-tavcar/msfabric-fabribuddy){ .md-button }
 
 </div>
+
+
+<video class="fb-video" autoplay loop muted playsinline poster="assets/video/lineage-demo-poster.webp">
+  <source src="assets/video/lineage-demo.mp4" type="video/mp4">
+</video>
+<p class="fb-caption">Click a table to trace it upstream and downstream, then open the exact code that writes it.</p>
 
 <div class="fb-promise" markdown>
 **Your data never leaves your tenant.**
@@ -27,7 +34,6 @@ ever sent outside your Microsoft tenant.
 [How this works →](data-stays-in-your-tenant.md)
 </div>
 
-![The FabriBuddy Data Catalog](assets/screenshots/catalog-overview.webp){ .fb-shot }
 
 ## What you get
 

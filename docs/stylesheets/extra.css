@@ -73,3 +73,19 @@
   .md-typeset h1.fb-word { font-size: 2.2rem; }
   .md-typeset h1.fb-word .fb-mark { width: 2.5rem; height: 2.5rem; }
 }
+
+/* Lineage demo video */
+.md-typeset video.fb-video {
+  display: block;
+  width: 100%;
+  margin: 1.2rem 0 0.4rem;
+  border: 1px solid var(--md-default-fg-color--lightest);
+  border-radius: 10px;
+  box-shadow: 0 8px 28px rgba(20, 35, 30, 0.14);
+}
+.md-typeset .fb-caption {
+  margin-top: 0.2rem;
+  text-align: center;
+  font-size: 0.72rem;
+  color: var(--md-default-fg-color--light);
+}

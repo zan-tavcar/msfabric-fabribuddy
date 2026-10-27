@@ -3,8 +3,8 @@
 </p>
 
 <p align="center">
-  <b>Where every table in your Microsoft Fabric estate comes from, the code that writes it,<br>
-  and who can see every Power BI report.</b><br>
+  <b>Data lineage for Microsoft Fabric, reverse-engineered from your code.</b><br>
+  Where every table comes from, the exact lines that write it, and who can see every Power BI report.<br>
   Free and open source. A Fabric App that runs in your own tenant.
 </p>
 
@@ -22,7 +22,11 @@
 > capacity. There is no FabriBuddy server, no account, no telemetry and nothing to pay for.
 > [How this works](https://zan-tavcar.github.io/msfabric-fabribuddy/data-stays-in-your-tenant/)
 
-![The FabriBuddy Data Catalog](docs/assets/screenshots/catalog-overview.webp)
+<p align="center">
+  <img src="docs/assets/video/lineage-demo.gif" alt="Tracing a table's lineage in FabriBuddy and opening the code that writes it" width="100%">
+  <br><sub>Click a table to trace it upstream and downstream, then open the exact code that writes it.
+  <a href="https://zan-tavcar.github.io/msfabric-fabribuddy/">Full-quality video on the docs site</a>.</sub>
+</p>
 
 ## What you get
 

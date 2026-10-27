@@ -3,6 +3,10 @@
 Every lakehouse and warehouse table, what writes it, what depends on it and who can read it. Built
 from the code and metadata already in your tenant.
 
+<video class="fb-video" autoplay loop muted playsinline poster="assets/video/lineage-demo-poster.webp">
+  <source src="assets/video/lineage-demo.mp4" type="video/mp4">
+</video>
+
 ## Overview
 
 The Data Catalog opens on its overview: two catalogs, each with its own search.
