@@ -8,7 +8,7 @@ only reads. Nothing here ever writes — `allow_write=True` on the request is
 about the HTTP verb being POST, not about mutating the tenant.
 
 Per item type, the parts that matter:
-  Notebook       notebook-content.py
+    Notebook       notebook-content.py, notebook-content.sql
   DataPipeline   pipeline-content.json
   Dataflow       mashup.pq, queryMetadata.json
   SemanticModel  definition/**/*.tmdl
@@ -37,7 +37,7 @@ FORMATS = {
 # files, images, large binary blobs) is skipped so a definition fetch does not
 # drag a report's assets into the database.
 RELEVANT_PARTS = {
-    "Notebook": ("notebook-content.py",),
+    "Notebook": ("notebook-content.py", "notebook-content.sql"),
     "DataPipeline": ("pipeline-content.json",),
     "Dataflow": ("mashup.pq", "querymetadata.json"),
     "SemanticModel": (".tmdl",),

@@ -39,7 +39,7 @@ log = logging.getLogger("lineage.collect.definitions")
 
 # Bumped when a parser changes behaviour, so stored results are recognised as
 # stale and re-parsed without re-fetching.
-PARSER_VERSION = 15
+PARSER_VERSION = 16
 
 # Concurrent getDefinition operations. Modest on purpose: the Fabric API
 # throttles per principal, and a 429 storm is slower than a queue.
@@ -67,6 +67,14 @@ ACTIVE_VALUE_SET_PART = ".activeValueSet"
 
 def _sha(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def _notebook_source(parts: dict[str, str]) -> tuple[str, str]:
+    for suffix in definitions_api.RELEVANT_PARTS["Notebook"]:
+        for path, text in parts.items():
+            if text and path.lower().endswith(suffix):
+                return text, definitions_api.language_for(path)
+    return "", ""
 
 
 def fetch(
@@ -644,9 +652,7 @@ class _Context:
                     mirroring_parser.variable_values(parts, item.display_name, active)
                 )
             elif item.item_type == "Notebook":
-                text = next(
-                    (t for p, t in parts.items() if p.endswith("notebook-content.py")), ""
-                )
+                text, _ = _notebook_source(parts)
                 if text:
                     ctx.notebooks.setdefault(item.workspace_id, {})[item.display_name] = (
                         text
@@ -691,14 +697,13 @@ def _run_parser(item, artifacts: list[CodeArtifact], context: "_Context | None" 
     variables = context.variables.get(item.workspace_id, {})
 
     if item.item_type == "Notebook":
-        text = next(
-            (t for p, t in by_path.items() if p.endswith("notebook-content.py")), ""
-        )
+        text, language = _notebook_source(by_path)
         if not text:
             return None, None
         return (
             notebook_parser.parse_notebook(
                 text,
+                language=language,
                 run_sources=context.notebooks.get(item.workspace_id, {}),
                 variables=variables,
                 workspace_name=context.workspace_name.get(item.workspace_id, ""),
@@ -924,13 +929,11 @@ def _apply_parameter_runs(
         if key in seen:
             continue
         seen.add(key)
-        text = next(
-            (
-                a.text
-                for a in artifacts_by_item.get(notebook.id, [])
-                if a.part_path.endswith("notebook-content.py")
-            ),
-            "",
+        text, language = _notebook_source(
+            {
+                artifact.part_path: artifact.text
+                for artifact in artifacts_by_item.get(notebook.id, [])
+            }
         )
         if not text:
             continue
@@ -938,6 +941,7 @@ def _apply_parameter_runs(
         try:
             result = notebook_parser.parse_notebook(
                 text,
+                language=language,
                 run_sources=context.notebooks.get(notebook.workspace_id, {}),
                 variables=context.variables.get(notebook.workspace_id, {}),
                 parameters=passed,
