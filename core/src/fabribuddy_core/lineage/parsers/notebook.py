@@ -1,16 +1,16 @@
 """
-Fabric notebook parser (`notebook-content.py`).
+Fabric notebook parser (`notebook-content.py` and `notebook-content.sql`).
 
 Three jobs:
 
-1. **Split into cells.** Fabric serialises a notebook as a Python file with
-   `# MARKDOWN ********************` / `# CELL ********************` markers.
+1. **Split into cells.** Fabric serialises a notebook with `#` (Python) or
+    `--` (SQL) comment markers for markdown, code cells and metadata.
    The cell index is what the Code tab highlights, so it has to be right.
 2. **Read the META block** to find the default lakehouse. Without it,
    `spark.read.table("customers")` cannot be resolved — and unqualified names
    are the norm in real notebooks, not the exception.
-3. **Parse each cell**: `%%sql` and `spark.sql(...)` go to the SQL parser,
-   PySpark goes through Python's `ast`.
+3. **Parse each cell**: native SQL, `%%sql` and `spark.sql(...)` go to the SQL
+    parser; PySpark goes through Python's `ast`.
 
 `from pyspark.sql import functions as F` is not used anywhere in this codebase
 or its fixtures — functions are imported directly.
@@ -41,7 +41,7 @@ log = logging.getLogger("lineage.parse.notebook")
 # A parameter cell is `# PARAMETERS CELL ****`: code, whose assignments are the
 # defaults a pipeline's Notebook activity may override.
 _CELL_MARKER = re.compile(
-    r"^#\s*(PARAMETERS CELL|CELL|MARKDOWN|METADATA|META)\s*\*+\s*$", re.MULTILINE
+    r"^(?:#|--)\s*(PARAMETERS CELL|CELL|MARKDOWN|METADATA|META)\s*\*+\s*$", re.MULTILINE
 )
 
 _MAGIC_SQL = re.compile(r"^\s*%%sql\b", re.IGNORECASE)
@@ -49,12 +49,13 @@ _MAGIC_RUN = re.compile(r"^\s*%run\s+(?P<target>\S+)", re.MULTILINE)
 
 
 class Cell:
-    __slots__ = ("kind", "index", "text")
+    __slots__ = ("kind", "index", "text", "language")
 
     def __init__(self, kind: str, index: int, text: str):
         self.kind = kind
         self.index = index
         self.text = text
+        self.language = ""
 
     @property
     def label(self) -> str:
@@ -84,7 +85,8 @@ def split_cells(source: str) -> tuple[list[Cell], dict]:
     # one, so the Code tab would highlight the wrong cell. Only a preamble with
     # real code counts.
     if preamble and any(
-        line.strip() and not line.lstrip().startswith("#") for line in preamble.splitlines()
+        line.strip() and not line.lstrip().startswith(("#", "--"))
+        for line in preamble.splitlines()
     ):
         parts.append(("CELL", preamble))
 
@@ -105,6 +107,8 @@ def split_cells(source: str) -> tuple[list[Cell], dict]:
             # every cell then carries its own `{"language": …}` block, which
             # must not overwrite it — or the default lakehouse is lost.
             parsed = _parse_meta(text)
+            if cells and cells[-1].index == index and parsed.get("language"):
+                cells[-1].language = parsed["language"]
             if not metadata or "dependencies" in parsed:
                 metadata = parsed if "dependencies" in parsed or not metadata else metadata
             continue
@@ -118,7 +122,7 @@ def split_cells(source: str) -> tuple[list[Cell], dict]:
 
 def _parse_meta(text: str) -> dict:
     """
-    The META cell is JSON in a comment block. Each line is `# ...`.
+    The META cell is JSON in a comment block, using `#` or `--` prefixes.
 
     Returns {} rather than raising for anything unexpected: a notebook with a
     malformed META block still has parseable code, and unqualified names simply
@@ -127,9 +131,12 @@ def _parse_meta(text: str) -> dict:
     lines = []
     for raw in text.splitlines():
         stripped = raw.strip()
-        if not stripped.startswith("#"):
+        if stripped.startswith("--"):
+            body = stripped[2:].strip()
+        elif stripped.startswith("#"):
+            body = stripped.lstrip("#").strip()
+        else:
             continue
-        body = stripped.lstrip("#").strip()
         # Fabric writes each metadata line as "# META <json fragment>"; the
         # keyword has to come off too or the JSON never parses and every
         # unqualified table name in the notebook silently fails to resolve.
@@ -1205,6 +1212,7 @@ def _expression_text(node) -> str:
 def parse_notebook(
     source: str,
     *,
+    language: str = "",
     default_lakehouse_name: str = "",
     run_sources: dict[str, str] | None = None,
     variables: dict[str, str] | None = None,
@@ -1215,6 +1223,9 @@ def parse_notebook(
     """
     Parse a Fabric notebook into reads, writes, column edges and invocations.
 
+    `language` is the definition part's source language. When omitted, the
+    comment prefix distinguishes SQL exports from Python. Per-cell language
+    metadata takes precedence over the notebook's source language.
     `default_lakehouse_name` overrides what the META block says, for the case
     where a pipeline attaches a different lakehouse at run time.
     `run_sources` maps notebook name -> source for the notebooks this one may
@@ -1231,6 +1242,7 @@ def parse_notebook(
     """
     result = ParseResult()
     run_sources = {k.lower(): v for k, v in (run_sources or {}).items()}
+    language = language or ("sql" if source.lstrip().startswith("--") else "python")
     cells, metadata = split_cells(source)
     meta_lakehouse, meta_lakehouse_id = default_lakehouse(metadata)
     lakehouse = default_lakehouse_name or meta_lakehouse
@@ -1259,7 +1271,10 @@ def parse_notebook(
             result.invokes.append(target)
             _absorb_run(run_sources, target, evaluator, depth=0)
 
-        if _MAGIC_SQL.search(text):
+        if _MAGIC_SQL.search(text) or (cell.language or language).lower() in (
+            "sql",
+            "sparksql",
+        ):
             body = _MAGIC_SQL.sub("", text, count=1)
             nested = parse_sql(body, via_ref=cell.label)
             _qualify_result(nested, lakehouse, lakehouse_id)
