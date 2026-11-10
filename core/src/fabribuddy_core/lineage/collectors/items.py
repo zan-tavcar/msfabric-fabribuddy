@@ -418,6 +418,10 @@ def _shortcut_edges(
     target resolves to the real table when it is in scope; anything else — an
     out-of-scope workspace, ADLS, S3, Dataverse — becomes an external node
     named after the location, so the table never looks like it has no source.
+
+    A schema shortcut (`Tables/<schema>` in a schema-enabled lakehouse) is a
+    whole folder of shortcut tables: each table enumerated under that schema
+    gets its own edge, from the same-named table in the target schema.
     """
     item_id = ids.item_id(ws_guid, lh_guid)
     try:
@@ -434,6 +438,7 @@ def _shortcut_edges(
         ]
 
     made = 0
+    schema_tables: dict[str, list[str]] | None = None  # lazily, schema -> tables
     for shortcut in shortcuts:
         path = str(shortcut.get("path") or "").strip("/")
         name = str(shortcut.get("name") or "")
@@ -442,27 +447,92 @@ def _shortcut_edges(
         segments = [p for p in path.split("/") if p]
         schema = segments[1] if len(segments) > 1 else "dbo"
         table_id = ids.lakehouse_table_id(ws_guid, lh_guid, schema, name)
-        if repository.get_node(session, customer_id, tenant_id, table_id) is None:
+
+        if repository.get_node(session, customer_id, tenant_id, table_id) is not None:
+            links = [(table_id, shortcut, f"shortcut {path}/{name}")]
+        elif len(segments) == 1:
+            # `Tables/<name>` that is not a table: in a schema-enabled lakehouse
+            # this is a schema shortcut — every table under the schema is a
+            # shortcut table, each sourced from the same-named table in the
+            # target schema.
+            if schema_tables is None:
+                schema_tables = _tables_by_schema(
+                    session, customer_id, tenant_id, ids.item_id(ws_guid, lh_guid)
+                )
+            tables = schema_tables.get(name.lower(), [])
+            links = [
+                (
+                    ids.lakehouse_table_id(ws_guid, lh_guid, real_schema, table),
+                    _schema_shortcut_for_table(shortcut, table),
+                    f"schema shortcut {path}/{name} ({table})",
+                )
+                for real_schema, table in tables
+            ]
+        else:
             continue  # not enumerated as a table (broken shortcut) — nothing to link
 
-        source_id = _shortcut_source(session, customer_id, tenant_id, shortcut)
-        if source_id is None:
-            continue
-        repository.upsert_edge(
-            session,
-            customer_id,
-            tenant_id,
-            from_node_id=source_id,
-            to_node_id=table_id,
-            via_item_id=item_id,
-            via_ref=f"shortcut {path}/{name}",
-            write_mode="shortcut",
-            source=SOURCE_DECLARED,
-            confidence="high",
-            is_dynamic=False,
-        )
-        made += 1
+        for to_id, resolved, via_ref in links:
+            source_id = _shortcut_source(session, customer_id, tenant_id, resolved)
+            if source_id is None:
+                continue
+            repository.upsert_edge(
+                session,
+                customer_id,
+                tenant_id,
+                from_node_id=source_id,
+                to_node_id=to_id,
+                via_item_id=item_id,
+                via_ref=via_ref,
+                write_mode="shortcut",
+                source=SOURCE_DECLARED,
+                confidence="high",
+                is_dynamic=False,
+            )
+            made += 1
     return made, []
+
+
+def _tables_by_schema(
+    session, customer_id: str, tenant_id: str, item_id: str
+) -> dict[str, list[tuple[str, str]]]:
+    """A lakehouse's enumerated tables, keyed by lower-cased schema name."""
+    out: dict[str, list[tuple[str, str]]] = {}
+    for node in repository.list_nodes(
+        session, customer_id, tenant_id, kind=KIND_LAKEHOUSE_TABLE, item_id=item_id
+    ):
+        if node.schema_name and node.table_name:
+            out.setdefault(node.schema_name.lower(), []).append(
+                (node.schema_name, node.table_name)
+            )
+    return out
+
+
+def _schema_shortcut_for_table(shortcut: dict, table: str) -> dict:
+    """
+    The table-level shortcut one table of a schema shortcut amounts to.
+
+    A schema shortcut targets a folder of tables — `Tables/<schema>` in a
+    schema-enabled lakehouse, `Tables` in one without schemas, or a folder of
+    Delta tables elsewhere — so table `t` in it is `<target>/t`.
+    """
+    target = dict(shortcut.get("target") or {})
+    kind = str(target.get("type") or "")
+    if kind == "OneLake":
+        one = dict(target.get("oneLake") or {})
+        base = str(one.get("path") or "Tables").strip("/")
+        one["path"] = f"{base}/{table}"
+        target["oneLake"] = one
+    else:
+        key = kind[:1].lower() + kind[1:]
+        props = dict(target.get(key) or {})
+        for field in ("subpath", "deltaLakeFolder"):
+            if props.get(field):
+                props[field] = f"{str(props[field]).rstrip('/')}/{table}"
+                break
+        else:
+            props.setdefault("tableName", table)
+        target[key] = props
+    return {**shortcut, "name": table, "target": target}
 
 
 def _shortcut_source(session, customer_id, tenant_id, shortcut: dict) -> str | None:
