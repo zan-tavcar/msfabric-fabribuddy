@@ -114,8 +114,9 @@ class ParseResult:
     # Other items this one invokes: %run, notebookutils.notebook.run, a pipeline
     # Notebook activity. Drives the orchestration view.
     invokes: list[str] = field(default_factory=list)
-    # A pipeline's Notebook activities with the parameters they pass:
-    # (notebook reference, {parameter: literal value}).
+    # Notebooks run with parameters — a pipeline's Notebook activity, or a
+    # notebook's `notebook.run` / `runMultiple`: (notebook reference,
+    # {parameter: literal value}), one entry per distinct set.
     invoke_parameters: list[tuple[str, dict[str, str]]] = field(default_factory=list)
     # Tables the code *could* write but does not today: a dataflow query with
     # loading switched off, whose name is the table a default destination would

@@ -912,17 +912,19 @@ def _apply_parameter_runs(
     errors,
 ) -> int:
     """
-    A notebook run by a pipeline with parameters, parsed with those values.
+    A notebook run with parameters, parsed with those values.
 
-    The notebook's own parse uses its parameter cell's defaults; each distinct
-    set of values a pipeline passes is parsed once more and its writes added
+    The caller is a pipeline's Notebook activity, or another notebook through
+    `notebook.run(..., arguments)` or a `runMultiple` DAG's `args`. The
+    notebook's own parse uses its parameter cell's defaults; each distinct set
+    of values a caller passes is parsed once more and its writes added
     (same notebook, so its Code tab and page show them). Returns how many runs
     were applied.
     """
     seen: set[tuple[str, tuple]] = set()
     applied = 0
-    for pipeline, reference, passed in runs:
-        notebook = invocation_index.find(pipeline, reference)
+    for caller, reference, passed in runs:
+        notebook = invocation_index.find(caller, reference)
         if notebook is None or notebook.item_type != "Notebook":
             continue
         key = (notebook.id, tuple(sorted(passed.items())))
@@ -966,7 +968,7 @@ def _apply_parameter_runs(
                     "scope_id": notebook.id,
                     "scope_name": notebook.display_name,
                     "reason": "error",
-                    "message": f"Run from {pipeline.display_name} with "
+                    "message": f"Run from {caller.display_name} with "
                     f"{', '.join(f'{k}={v}' for k, v in passed.items())} could not be "
                     f"parsed: {type(e).__name__}",
                 }
