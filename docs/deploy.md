@@ -42,9 +42,9 @@ creates everything else, then prints the commands that add the app.
 The notebook prints each step:
 
 ```text
-FabriBuddy 0.1.0 from zan-tavcar/msfabric-fabribuddy@main
+FabriBuddy 0.1.1 from zan-tavcar/msfabric-fabribuddy@main
 ✓ FabriBuddy_DB
-✓ FabriBuddy 0.1.0 stored in FabriBuddy_DB
+✓ FabriBuddy 0.1.1 stored in FabriBuddy_DB
 ✓ FabriBuddy_Scan.Notebook created
 ✓ Check_FabriBuddy_Version.Notebook created
 ✓ Load_FabriBuddy_E2E.DataPipeline created
