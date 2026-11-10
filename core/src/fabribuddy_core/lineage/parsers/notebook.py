@@ -241,6 +241,9 @@ class _Evaluator:
         # as rows (not flattened candidates) so a loop that unpacks them binds
         # each pair together rather than every combination of the columns.
         self.rows: dict[str, list[tuple[str, ...]]] = {}
+        # name -> the dict / list literal last assigned to it, kept whole for
+        # structures `eval` flattens: a runMultiple DAG's list of activities.
+        self.literals: dict[str, ast.expr] = {}
         self.variables = {k.lower(): v for k, v in (variables or {}).items()}
 
     # -- assignment tracking --------------------------------------------
@@ -273,6 +276,10 @@ class _Evaluator:
                 self.rows[target.id] = rows
             else:
                 self.rows.pop(target.id, None)
+            if isinstance(value_node, ast.Dict | ast.List | ast.Tuple):
+                self.literals[target.id] = value_node
+            else:
+                self.literals.pop(target.id, None)
             value = self.eval(value_node)
             if value is None:
                 self.consts.pop(target.id, None)
@@ -287,6 +294,7 @@ class _Evaluator:
         """`for table in ["a", "b"]:` binds `table` to both candidates."""
         if not isinstance(target, ast.Name):
             return
+        self.literals.pop(target.id, None)
         values = self.eval(iter_node)
         items = [v for value in (values or []) if isinstance(value, list) for v in value]
         strings = [v for v in items if isinstance(v, str)][:_MAX_CANDIDATES]
@@ -472,6 +480,52 @@ class _Evaluator:
 
 
 _STRING_METHODS = {"split", "rsplit", "lower", "upper", "strip", "replace"}
+
+
+class _Candidates(list):
+    """The strings one leaf of a DAG or argument dict can take."""
+
+
+_UNKNOWN = object()
+
+
+def _from_evaluated(values):
+    """`_Evaluator.eval`'s answer as a `_PySparkVisitor._structure` value."""
+    if not values:
+        return _UNKNOWN
+    if len(values) == 1 and isinstance(values[0], dict):
+        return {
+            key: _from_evaluated(value) for key, value in values[0].items()
+        }
+    if len(values) == 1 and isinstance(values[0], list):
+        return [_Candidates([v]) for v in values[0] if isinstance(v, str)]
+    strings = [v for v in values if isinstance(v, str)]
+    return _Candidates(dict.fromkeys(strings)) if strings else _UNKNOWN
+
+
+def _parameter_sets(arguments) -> list[dict[str, str]] | None:
+    """
+    `{"table": "sales", "key": "SaleId"}` -> [{"table": "sales", "key": "SaleId"}].
+
+    A value with several candidates yields one set per combination (capped);
+    any value that is not a plain resolved string makes the whole dict None,
+    since running the child with some defaults standing in would invent lineage.
+    """
+    if not isinstance(arguments, dict):
+        return None
+    names, choices = [], []
+    for name, value in arguments.items():
+        if not isinstance(value, _Candidates) or not value:
+            return None
+        names.append(name)
+        choices.append(list(value))
+    return [dict(zip(names, combo, strict=True)) for combo in _product(choices)][
+        :_MAX_CANDIDATES
+    ]
+
+
+def _keyword(node: ast.Call, name: str):
+    return next((k.value for k in node.keywords if k.arg == name), None)
 
 
 def _int_index(node) -> int | None:
@@ -779,6 +833,7 @@ class _PySparkVisitor(ast.NodeVisitor):
             for row in rows:
                 for index, target in enumerate(targets):
                     if isinstance(target, ast.Name):
+                        self.evaluator.literals.pop(target.id, None)
                         if index < len(row):
                             self.evaluator.consts[target.id] = [row[index]]
                         else:
@@ -886,6 +941,10 @@ class _PySparkVisitor(ast.NodeVisitor):
                 self._record_merge(node)
             elif attribute == "run":
                 self._record_run(node)
+            elif attribute == "runMultiple" and _dotted(node.func).endswith(
+                "notebook.runMultiple"
+            ):
+                self._record_run_multiple(node)
 
         self.generic_visit(node)
 
@@ -1031,12 +1090,132 @@ class _PySparkVisitor(ast.NodeVisitor):
         self.result.column_edges.extend(retargeted)
 
     def _record_run(self, node: ast.Call) -> None:
-        """`notebookutils.notebook.run("nb_shared")` — an item dependency."""
+        """
+        `notebookutils.notebook.run("nb_shared", 90, {"table": "sales"})`.
+
+        An item dependency; the arguments dict (3rd positional or `arguments=`)
+        is the parameter set the child runs with, re-parsed like a pipeline's.
+        """
         if not node.args:
             return
-        literal = self._literal(node.args[0])
-        if literal:
-            self.result.invokes.append(literal)
+        is_notebook_run = _dotted(node.func).endswith("notebook.run")
+        targets = (
+            self._candidates(node.args[0]) if is_notebook_run else None
+        ) or ([self._literal(node.args[0])] if self._literal(node.args[0]) else [])
+        if not targets:
+            if is_notebook_run:
+                self.result.warn(
+                    f"{self.cell_label}: dynamic notebook in notebook.run "
+                    f"({self._unresolved(node.args[0])}) — could not resolve what it runs"
+                )
+            return
+        arguments = node.args[2] if len(node.args) > 2 else _keyword(node, "arguments")
+        sets = [{}]
+        if is_notebook_run and arguments is not None:
+            resolved = _parameter_sets(self._structure(arguments))
+            if resolved is None:
+                self.result.warn(
+                    f"{self.cell_label}: dynamic arguments to notebook.run "
+                    f"({self._unresolved(arguments)}) — could not resolve the "
+                    "parameters it passes"
+                )
+            else:
+                sets = resolved or [{}]
+        for target in targets:
+            self._invoke(target, sets)
+
+    def _record_run_multiple(self, node: ast.Call) -> None:
+        """
+        `notebookutils.notebook.runMultiple(DAG)` — every notebook in the DAG.
+
+        Takes the list form (`["nb_a", "nb_b"]`) or the DAG dict, whose
+        activities each name a notebook (`path`) and the parameters it gets
+        (`args`). The DAG may be inline or a variable assigned earlier, in this
+        notebook or a `%run` config. One built from data at run time cannot be
+        followed and is reported, not guessed.
+        """
+        dag_node = node.args[0] if node.args else _keyword(node, "dag")
+        if dag_node is None:
+            return
+        dag = self._structure(dag_node)
+        if isinstance(dag, dict):
+            activities = dag.get("activities")
+        elif isinstance(dag, list):
+            activities = dag
+        else:
+            activities = None
+        if not isinstance(activities, list):
+            self._dynamic_dag(dag_node)
+            return
+
+        unresolved = False
+        for activity in activities:
+            if isinstance(activity, _Candidates):
+                for target in activity:
+                    self._invoke(target, [{}])
+                continue
+            if not isinstance(activity, dict) or not isinstance(
+                activity.get("path"), _Candidates
+            ):
+                unresolved = True
+                continue
+            sets = [{}]
+            if "args" in activity:
+                resolved = _parameter_sets(activity["args"])
+                if resolved is None:
+                    unresolved = True
+                else:
+                    sets = resolved or [{}]
+            for target in activity["path"]:
+                self._invoke(target, sets)
+        if unresolved:
+            self._dynamic_dag(dag_node)
+
+    def _dynamic_dag(self, node) -> None:
+        self.result.warn(
+            f"{self.cell_label}: dynamic runMultiple DAG ({self._unresolved(node)[:120]})"
+            " — could not resolve every notebook it runs and the parameters it passes"
+        )
+        self.result.confidence = CONF_MEDIUM
+
+    def _invoke(self, target: str, parameter_sets: list[dict[str, str]]) -> None:
+        self.result.invokes.append(target)
+        for passed in parameter_sets:
+            if passed:
+                self.result.invoke_parameters.append((target, passed))
+
+    def _structure(self, node, depth: int = 0):
+        """
+        A literal Python structure, for DAGs and argument dicts.
+
+        Dicts and lists come back as dicts and lists; every leaf is a
+        `_Candidates` of the strings it can take (see _Evaluator), or
+        `_UNKNOWN`. A variable is followed to the literal assigned to it (here
+        or in a `%run` config). Unlike `_Evaluator.eval`, a dict entry whose value is
+        unknown is kept (as `_UNKNOWN`), so a half-resolved DAG is reported
+        rather than silently run with default parameters.
+        """
+        if depth > 6:
+            return _UNKNOWN
+        if isinstance(node, ast.Dict):
+            out: dict = {}
+            for key, value in zip(node.keys, node.values, strict=False):
+                keys = self.evaluator.strings(key) if key is not None else None
+                if not keys or len(keys) != 1:
+                    return _UNKNOWN  # `**spread` or a computed key
+                out[keys[0]] = self._structure(value, depth + 1)
+            return out
+        if isinstance(node, ast.List | ast.Tuple):
+            return [self._structure(e, depth + 1) for e in node.elts]
+        if isinstance(node, ast.Constant):
+            if isinstance(node.value, str | int | float | bool):
+                return _Candidates([str(node.value)])
+            return _UNKNOWN
+        if isinstance(node, ast.Name):
+            literal = self.evaluator.literals.get(node.id)
+            if literal is not None:
+                return self._structure(literal, depth + 1)
+        return _from_evaluated(self.evaluator.eval(node))
 
     # -- column extraction ----------------------------------------------
     def _select_columns(self, node) -> list[ColumnEdgeRef]:
