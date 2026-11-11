@@ -25,7 +25,7 @@ export type MonitorView = "items" | "gantt" | "chains" | "calendar" | "schedules
 export const MONITOR_NAV: { id: MonitorView; label: string; icon: typeof LayoutList }[] = [
   { id: "items", label: "Items", icon: LayoutList },
   { id: "gantt", label: "Gantt", icon: GanttChart },
-  { id: "chains", label: "Execution chains", icon: GitFork },
+  { id: "chains", label: "Dependencies", icon: GitFork },
   { id: "calendar", label: "Calendar", icon: CalendarDays },
   { id: "schedules", label: "Schedules", icon: CalendarClock },
   { id: "failures", label: "Failures", icon: AlertOctagon },

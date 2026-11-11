@@ -1,17 +1,13 @@
 import { useMemo, useState } from "react";
-import { AlertTriangle, CalendarClock, GitFork, Info } from "lucide-react";
+import { AlertTriangle, CalendarClock, Info } from "lucide-react";
 import type { GraphEdge, GraphNode, GraphPayload, Layer, NodeKind } from "../../api/types";
-import type { JobRun, JobSummary, JobsPayload, LivePayload, RunStatus, RunsPayload } from "../api";
+import type { JobSummary, JobsPayload, LivePayload, RunStatus, RunsPayload } from "../api";
 import { DataTable, type Column } from "../../audience/components/DataTable";
-import { Empty, Loading } from "../../components/primitives";
 import { LineageGraph } from "../../views/LineageGraph";
-import { OpenInFabric } from "../../components/OpenInFabric";
-import { StatusBadge } from "../components/Status";
 import { TypeIcon } from "../components/TypeIcon";
 import { dataNeighbours, dependencyChecks, descendantsOf, type Check } from "../deps";
 import { STATUS_LABEL, duration, relative, when } from "../lib";
-import { useJob, useNow } from "../store";
-import { GraphTab } from "./JobDetail";
+import { useNow } from "../store";
 
 /** Lanes, left to right: what starts things, then the order data moves in. */
 const LANES = ["trigger", "pipeline", "ingest", "compute", "model"] as const;
@@ -34,14 +30,13 @@ const laneOf = (type: string): (typeof LANES)[number] =>
 type Show = "both" | "runs" | "data";
 
 /**
- * What triggers what, and what waits for whose data — the Data Catalog's
- * lineage, for items instead of tables. Solid lines: a schedule or an item
- * starts another. Dashed: an item reads a table another item writes. Click an
- * item to trace everything upstream and downstream of it.
+ * The whole estate on one graph, like the Data Catalog's lineage: every item,
+ * what starts it (a schedule, a pipeline, a notebook) and whose data it reads.
+ * Solid lines: a schedule or an item starts another. Dashed: an item reads a
+ * table another item writes. Below it, the checks on those dependencies.
  */
 export function Chains({
   all,
-  jobs,
   runs,
   live,
   onOpen,
@@ -54,24 +49,6 @@ export function Chains({
 }) {
   const now = useNow(15_000);
   const running = useMemo(() => new Set((live?.running ?? []).map((r) => r.item.id)), [live]);
-  const byId = useMemo(() => new Map(all.jobs.map((j) => [j.id, j])), [all]);
-
-  // A chain starts at an item that runs others and that nothing runs.
-  const roots = useMemo(
-    () =>
-      all.jobs
-        .filter((j) => j.children.length)
-        .sort(
-          (a, b) =>
-            Number(a.parents.some((p) => byId.has(p.id))) - Number(b.parents.some((p) => byId.has(p.id))) ||
-            descendantsOf(b.id, byId).size - descendantsOf(a.id, byId).size ||
-            a.name.localeCompare(b.name),
-        ),
-    [all, byId],
-  );
-  const [rootId, setRootId] = useState<string | null>(null);
-  const root = (rootId && roots.find((r) => r.id === rootId)) || roots[0] || null;
-
   const checks = useMemo(
     () => dependencyChecks(all, runs?.runs ?? [], now - 30 * 86_400_000),
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -81,74 +58,21 @@ export function Chains({
   return (
     <div className="stack">
       <header className="page-head">
-        <h2 className="page-head-title">Execution chains</h2>
+        <h2 className="page-head-title">Dependencies</h2>
         <p className="page-head-sub">
-          What calls what. Pick a chain — a pipeline, or a notebook that runs notebooks with{" "}
-          <code>notebook.run</code>, <code>runMultiple</code> or <code>%run</code> — to see its latest run as a graph: every
-          activity, what it ran, how long it took. Click a box for its details.
+          Every item in the estate, what starts it and whose data it reads, on one graph like the Data Catalog's
+          lineage. Click an item to trace everything upstream and downstream of it.
         </p>
       </header>
 
-      {!roots.length ? (
-        <Empty title="No chains">
-          Nothing here runs another item. A chain appears when a pipeline runs notebooks, dataflows or pipelines, or a
-          notebook runs notebooks.
-        </Empty>
-      ) : (
-        <>
-          <div className="mon-chain-picker" role="tablist" aria-label="Chains">
-            {roots.map((r) => {
-              const size = descendantsOf(r.id, byId).size;
-              const st: RunStatus | null = running.has(r.id) ? "running" : r.latest?.status ?? null;
-              return (
-                <button
-                  key={r.id}
-                  type="button"
-                  role="tab"
-                  aria-selected={r.id === root?.id}
-                  className={`mon-chain-card${r.id === root?.id ? " active" : ""}`}
-                  onClick={() => setRootId(r.id)}
-                >
-                  <span className="mon-chain-card-head">
-                    <TypeIcon type={r.type} />
-                    <strong>{r.name}</strong>
-                    {st && <StatusBadge status={st} compact />}
-                  </span>
-                  <span className="muted-note">
-                    {r.parents.length ? `inside ${r.parents.map((p) => p.name).join(", ")}` : r.schedule ? r.schedule.text : "Started by hand or the API"}
-                  </span>
-                  <span className="muted-note">
-                    runs {size} item{size === 1 ? "" : "s"} · usual {duration(r.stats.avgSec)}
-                    {r.latest ? ` · last ${relative(r.latest.startedAt, now)}` : ""}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-          {root && (
-            <section className="mon-chain-head">
-              <TypeIcon type={root.type} size={18} />
-              <div className="mon-chain-head-name">
-                <h3>{root.name}</h3>
-                <span className="muted-note">
-                  {root.typeLabel} · {root.workspace}
-                </span>
-              </div>
-              <span className="mon-head-spacer" />
-              <button type="button" className="btn" onClick={() => onOpen(root.id)}>
-                Open item
-              </button>
-              <OpenInFabric link={root} />
-            </section>
-          )}
-          {root && <ChainGraph key={root.id} root={root} onOpen={onOpen} />}
-        </>
-      )}
+      <section className="card">
+        <EstateGraph all={all} jobs={all} running={running} now={now} onOpen={onOpen} />
+      </section>
 
       <section className="card mon-pad">
         <div className="mon-section-head">
           <h3>
-            <AlertTriangle size={15} aria-hidden="true" className="mon-icon-warn" /> Dependency checks, every chain, last 30 days
+            <AlertTriangle size={15} aria-hidden="true" className="mon-icon-warn" /> Dependency checks, last 30 days
           </h3>
           <p className="muted-note">
             An item that reads a table another item writes depends on it. These are the dependencies that nothing orders,
@@ -167,29 +91,8 @@ export function Chains({
           </p>
         )}
       </section>
-
-      <details className="card mon-estate">
-        <summary>
-          <GitFork size={15} aria-hidden="true" /> The whole estate: every item, what starts it and whose data it reads
-        </summary>
-        <EstateGraph all={all} jobs={all} running={running} now={now} onOpen={onOpen} />
-      </details>
     </div>
   );
-}
-
-/**
- * One chain as the item page's Graph: every activity of one run and what it
- * ran, with the run picker and a side panel for the picked task.
- */
-function ChainGraph({ root, onOpen }: { root: JobSummary; onOpen: (id: string, runId?: string) => void }) {
-  const { page, error } = useJob(root.id);
-  const [runId, setRunId] = useState<string | null>(null);
-  if (error) return <p className="banner banner-danger">{error}</p>;
-  if (!page) return <Loading what="the chain" />;
-  // The latest run, running or not; the run picker reaches older ones.
-  const run: JobRun | null = page.runs.find((r) => r.runId === runId) ?? page.runs[0] ?? null;
-  return <GraphTab page={page} run={run} onRun={setRunId} onOpen={onOpen} />;
 }
 
 /** Every item as the catalog's lineage graph, and the dependency table. */

@@ -14,7 +14,7 @@ refresh, Spark job definition and copy job in your tenant, in one app, next to t
 <video class="fb-video" autoplay loop muted playsinline poster="../assets/video/monitor-demo-poster.webp">
   <source src="../assets/video/monitor-demo.mp4" type="video/mp4">
 </video>
-<p class="fb-caption">Every item and its last runs, then one pipeline: its details and its execution chain. Then every item's runs over the last 6 hours, and the month.</p>
+<p class="fb-caption">Every item and its last runs, then one pipeline: its details and its execution chain. Then every item's runs over the last 6 hours, the month, and the whole estate's dependencies.</p>
 
 ## Why another monitor
 
@@ -40,16 +40,19 @@ failures in the last 6 hours to 30 days; its usual duration and success rate; an
 bars, where the height is the duration and the colour is the status. Filter by workspace, item type, item,
 status, role in a chain or keyword, and the filters follow you to every page.
 
-## Execution chains: what calls what
+## Dependencies: the whole estate on one graph
 
-![Execution chains](assets/screenshots/monitor-chains.webp){ .fb-shot }
+![Dependencies](assets/screenshots/monitor-dependencies.webp){ .fb-shot }
 
-Pick a chain and see its latest run as a graph: the schedule that started it, the pipeline's
-activities, the child pipelines they invoked, the dataflows, notebooks and model refreshes those
-started, and the notebooks run inside a notebook with `runMultiple`, `notebook.run` or `%run`. Each
-step has its own status and duration.
+Every item in the tenant on one graph, like the Data Catalog's lineage: which schedule starts it,
+which pipeline or orchestrator notebook runs it (including `runMultiple`, `notebook.run` and `%run`),
+and whose tables it reads. Click an item to trace everything upstream and downstream of it.
 
-Below it are the **dependency checks**, across every chain:
+Each item's page shows its own chain and a graph of each run: the pipeline's activities, the child
+pipelines they invoked, and the notebooks and refreshes those started, each with its status and
+duration.
+
+Below the graph are the **dependency checks**:
 
 - **Ran on failed input:** the reader ran after its input's writer failed.
 - **Started before its input was ready:** the reader started while the writer was still running.
@@ -91,8 +94,9 @@ the app within about a minute and a half. [More on live](job-monitor.md#live).
 
 ## Also in 0.2
 
-- **0.2.1:** *Open in Fabric* on the item page, the picked chain and a task's side panel. Execution
-  chains has no filter bar any more (pick a chain instead) and opens on the latest run.
+- **0.2.1:** *Open in Fabric* on the item page and on a task's side panel in a run's graph.
+- **Since 0.2.3:** an *Item* filter, and the Execution chains page became **Dependencies**: the
+  whole estate on one graph.
 - The products are now called **Data Catalog**, **Job Monitor** and **Report Audience**.
 - Lineage follows schema-level shortcuts to their source tables, and `runMultiple` DAGs and
   `notebook.run` arguments into child notebooks (from 0.1.1).

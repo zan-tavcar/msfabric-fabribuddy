@@ -73,8 +73,8 @@ ever sent outside your Microsoft tenant.
 
     - **Every run of every pipeline, notebook, dataflow and semantic model refresh**, with its
       last runs as bars, on a Gantt and on a calendar.
-    - **Execution chains**: what calls what, down through child pipelines, `runMultiple` and
-      `notebook.run`, with each step's time against its usual time.
+    - **Dependencies**: the whole estate on one graph, like the lineage: what starts what, down
+      through child pipelines, `runMultiple` and `notebook.run`, and whose data each item reads.
     - **Dependency checks**: items that ran on failed or half-written input, or that only line
       up by luck.
 
@@ -111,9 +111,9 @@ an hour earlier.
 <video class="fb-video" autoplay loop muted playsinline poster="assets/video/monitor-demo-poster.webp">
   <source src="assets/video/monitor-demo.mp4" type="video/mp4">
 </video>
-<p class="fb-caption">Every item and its last runs, then one pipeline: its details and its execution chain. Then every item's runs over the last 6 hours, and the month.</p>
+<p class="fb-caption">Every item and its last runs, then one pipeline: its details and its execution chain. Then every item's runs over the last 6 hours, the month, and the whole estate's dependencies.</p>
 
-![Execution chains: what calls what, for one run](assets/screenshots/monitor-chains.webp){ .fb-shot }
+![Dependencies: the whole estate, what starts what and whose data it reads](assets/screenshots/monitor-dependencies.webp){ .fb-shot }
 
 [What's new in 0.2 →](whats-new.md) · [The Job Monitor →](job-monitor.md) ·
 [Try it in the demo →](https://zan-tavcar.github.io/msfabric-fabribuddy/demo/)

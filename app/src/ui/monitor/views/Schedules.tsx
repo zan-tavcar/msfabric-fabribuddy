@@ -109,7 +109,7 @@ export function Schedules({
         <h2 className="page-head-title">Schedules</h2>
         <p className="page-head-sub">
           {scheduled.filter((j) => j.schedule?.enabled).length} active schedules. Items run by an orchestrator start with
-          it; they are on the Execution chains page.
+          it; they are on the Dependencies page.
         </p>
       </header>
 

@@ -43,8 +43,8 @@
 **Job Monitor** (new in 0.2)
 - **Every run of every pipeline, notebook, Dataflow Gen2 and semantic model refresh**, with its last
   runs as bars, on a Gantt and on a calendar.
-- **Execution chains**: what calls what, down through child pipelines, `runMultiple` and
-  `notebook.run`, with each step's status and duration.
+- **Dependencies**: the whole estate on one graph, like the lineage: what starts what, down through
+  child pipelines, `runMultiple` and `notebook.run`, and whose data each item reads.
 - **Dependency checks**: items that ran on failed or half-written input, or that only line up by luck.
 
 <p align="center">
@@ -96,7 +96,7 @@ About 15 minutes. You need a workspace on a Fabric capacity and a service princi
 | [Deploy](https://zan-tavcar.github.io/msfabric-fabribuddy/deploy/) | First deployment, step by step |
 | [Service principal](https://zan-tavcar.github.io/msfabric-fabribuddy/service-principal/) | The app registration, tenant setting and roles |
 | [The app](https://zan-tavcar.github.io/msfabric-fabribuddy/app/) | Adding the Fabric App and sharing it |
-| [Job Monitor](https://zan-tavcar.github.io/msfabric-fabribuddy/job-monitor/) | Runs, chains, schedules and dependency checks |
+| [Job Monitor](https://zan-tavcar.github.io/msfabric-fabribuddy/job-monitor/) | Runs, schedules, dependencies and dependency checks |
 | [What's new in 0.2](https://zan-tavcar.github.io/msfabric-fabribuddy/whats-new/) | The Job Monitor, in screenshots |
 | [Settings](https://zan-tavcar.github.io/msfabric-fabribuddy/settings/) | What is scanned, and when |
 | [Update](https://zan-tavcar.github.io/msfabric-fabribuddy/update/) | Getting a new version |
