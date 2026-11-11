@@ -31,8 +31,7 @@ creates everything else, then prints the commands that add the app.
 
     | Setting | Default | |
     |---|---|---|
-    | `WORKSPACES` | `""` | Workspace IDs to scan, comma-separated. Empty means every workspace. |
-    | `INCLUDE_PERSONAL` | `False` | Report Audience: include people's personal *My workspace*. |
+    | `WORKSPACES` | `""` | Workspace IDs to scan, comma-separated. Empty means every workspace. Personal *My workspace*s are never scanned. |
     | `TENANT_NAME` | `""` | How the app names your tenant, for example `"Contoso"`. |
     | `SCHEDULE_DAILY_AT_UTC` | `"05:00"` | The daily scan time, in UTC. `""` means no schedule. |
     | `RUN_AFTER_DEPLOY` | `True` | Start the first scan when deployment finishes. |
@@ -43,9 +42,9 @@ creates everything else, then prints the commands that add the app.
 The notebook prints each step:
 
 ```text
-FabriBuddy 0.2.1 from zan-tavcar/msfabric-fabribuddy@main
+FabriBuddy 0.2.2 from zan-tavcar/msfabric-fabribuddy@main
 ✓ FabriBuddy_DB
-✓ FabriBuddy 0.2.1 stored in FabriBuddy_DB
+✓ FabriBuddy 0.2.2 stored in FabriBuddy_DB
 ✓ FabriBuddy_Scan.Notebook created
 ✓ Check_FabriBuddy_Version.Notebook created
 ✓ Load_FabriBuddy_E2E.DataPipeline created

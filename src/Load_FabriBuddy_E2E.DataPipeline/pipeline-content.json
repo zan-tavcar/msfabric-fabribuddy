@@ -52,13 +52,6 @@
               },
               "type": "string"
             },
-            "include_personal": {
-              "value": {
-                "value": "@pipeline().parameters.include_personal",
-                "type": "Expression"
-              },
-              "type": "bool"
-            },
             "tenant_name": {
               "value": {
                 "value": "@pipeline().parameters.tenant_name",
@@ -111,10 +104,6 @@
       "workspaces": {
         "type": "string",
         "defaultValue": ""
-      },
-      "include_personal": {
-        "type": "bool",
-        "defaultValue": false
       },
       "tenant_name": {
         "type": "string",

@@ -38,7 +38,6 @@ PARAMETERS = {
     "sp_client_id": ("string", ""),
     "sp_secret_name": ("string", "fabribuddy-sp-secret"),
     "workspaces": ("string", ""),
-    "include_personal": ("bool", False),
     "tenant_name": ("string", ""),
     "full_refresh": ("bool", False),
     "demo": ("bool", False),
@@ -204,7 +203,6 @@ result = run(
     sql_token=sql_token(),
     tenant_name=tenant_name,
     workspaces=[w for w in workspaces.split(",") if w.strip()],
-    include_personal=include_personal,
     full=full_refresh,
     demo=demo,
 )
@@ -223,7 +221,6 @@ To update, import the latest `Deploy_FabriBuddy` notebook and run it.
 """),
     code('''sql_database_name = "FabriBuddy_DB"
 repository = "''' + REPOSITORY + '''"
-github_token = ""   # only while the repository is private
 ''', parameters=True),
     code(BOOTSTRAP),
     code('''
@@ -232,9 +229,8 @@ with sql_connect(server, database) as conn:
     row = conn.cursor().execute("SELECT version, saved_at FROM dbo.fabribuddy_package").fetchone()
 installed = row[0] if row else None
 
-headers = {"Authorization": f"token {github_token}"} if github_token else {}
 latest = requests.get(f"https://raw.githubusercontent.com/{repository}/main/data/current_fabribuddy_version.json",
-                      headers=headers, timeout=60).json()["version"]
+                      timeout=60).json()["version"]
 
 print(f"Installed: {installed or 'none'}   Latest: {latest}")
 print("FabriBuddy is up to date." if installed == latest else
@@ -368,7 +364,6 @@ SP_SECRET_NAME = "fabribuddy-sp-secret"
 
 # ── What to scan ───────────────────────────────────────────────────────────────
 WORKSPACES = ""           # workspace IDs, comma-separated; empty = every workspace
-INCLUDE_PERSONAL = False  # Report Audience: include personal "My workspace"s
 TENANT_NAME = ""          # how the app names your tenant, e.g. "Contoso"
 
 # ── Deployment ─────────────────────────────────────────────────────────────────
@@ -378,7 +373,6 @@ LIVE_MONITOR = False              # Job Monitor live all day: runs FabriBuddy_Li
                                   # (a small Python session, all day — it uses capacity)
 REPOSITORY = "''' + REPOSITORY + '''"
 BRANCH = "main"
-GITHUB_TOKEN = ""         # only while the repository is private
 '''
 
 DEPLOY = [
@@ -414,8 +408,7 @@ subprocess.check_call([sys.executable, "-m", "pip", "install", "--quiet", "--dis
 import yaml
 
 # Download this repository (src, config, data, release) into a temporary folder.
-headers = {"Authorization": f"token {GITHUB_TOKEN}"} if GITHUB_TOKEN else {}
-archive = requests.get(f"https://api.github.com/repos/{REPOSITORY}/zipball/{BRANCH}", headers=headers, timeout=300)
+archive = requests.get(f"https://api.github.com/repos/{REPOSITORY}/zipball/{BRANCH}", timeout=300)
 archive.raise_for_status()
 SOURCE = tempfile.mkdtemp(prefix="fabribuddy-")
 with zipfile.ZipFile(BytesIO(archive.content)) as z:
@@ -500,7 +493,7 @@ print(f"✓ FabriBuddy {release['version']} stored in {config['sql_database']}")
     code('''
 SETTINGS = {
     "key_vault_url": KEY_VAULT_URL, "sp_tenant_id": SP_TENANT_ID, "sp_client_id": SP_CLIENT_ID,
-    "sp_secret_name": SP_SECRET_NAME, "workspaces": WORKSPACES, "include_personal": INCLUDE_PERSONAL,
+    "sp_secret_name": SP_SECRET_NAME, "workspaces": WORKSPACES,
     "tenant_name": TENANT_NAME,
 }
 mapping = {config["ids"]["workspace"]: WORKSPACE_ID}

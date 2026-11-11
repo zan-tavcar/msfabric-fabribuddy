@@ -13,8 +13,7 @@ now, choose **Run**.
 | `sp_tenant_id` | | The directory (tenant) ID. |
 | `sp_client_id` | | The service principal's application (client) ID. |
 | `sp_secret_name` | `fabribuddy-sp-secret` | The secret's name in Key Vault. |
-| `workspaces` | | Workspace IDs to scan, comma-separated. Empty means every workspace. |
-| `include_personal` | `false` | Report Audience: include people's personal *My workspace*. |
+| `workspaces` | | Workspace IDs to scan, comma-separated. Empty means every workspace. Personal *My workspace*s are never scanned. |
 | `tenant_name` | | How the app names your tenant. |
 | `full_refresh` | `false` | Re-read everything instead of only what changed since the last scan. |
 | `demo` | `false` | Load the fictional Contoso tenant instead of scanning yours. |
