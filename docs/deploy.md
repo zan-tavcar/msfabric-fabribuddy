@@ -34,17 +34,17 @@ creates everything else, then prints the commands that add the app.
     | `WORKSPACES` | `""` | Workspace IDs to scan, comma-separated. Empty means every workspace. Personal *My workspace*s are never scanned. |
     | `TENANT_NAME` | `""` | How the app names your tenant, for example `"Contoso"`. |
     | `SCHEDULE_DAILY_AT_UTC` | `"05:00"` | The daily scan time, in UTC. `""` means no schedule. |
-    | `RUN_AFTER_DEPLOY` | `True` | Start the first scan when deployment finishes. |
-    | `LIVE_MONITOR` | `False` | Keep the [Job Monitor live](job-monitor.md#live): schedules **FabriBuddy_Live** hourly, so runs show up within about a minute and a half instead of after the next daily scan. It keeps a small Python session running all day, so it uses capacity. |
+    | `RUN_AFTER_DEPLOY` | `True` | Run a scan when deployment finishes. On a first deployment the notebook waits for it, usually 10–30 minutes. |
+    | `LIVE_MONITOR` | `False` | Keep the [Job Monitor live](job-monitor.md#live): after the first scan, schedules **FabriBuddy_Live** hourly, so runs show up within about a minute and a half instead of after the next daily scan. It keeps a small Python session running all day, so it uses capacity. |
 
 5. Choose **Run all**.
 
 The notebook prints each step:
 
 ```text
-FabriBuddy 0.2.2 from zan-tavcar/msfabric-fabribuddy@main
+FabriBuddy 0.2.3 from zan-tavcar/msfabric-fabribuddy@main
 ✓ FabriBuddy_DB
-✓ FabriBuddy 0.2.2 stored in FabriBuddy_DB
+✓ FabriBuddy 0.2.3 stored in FabriBuddy_DB
 ✓ FabriBuddy_Scan.Notebook created
 ✓ Check_FabriBuddy_Version.Notebook created
 ✓ Load_FabriBuddy_E2E.DataPipeline created
@@ -53,9 +53,16 @@ FabriBuddy 0.2.2 from zan-tavcar/msfabric-fabribuddy@main
 ✓ Storage: FabriBuddy_DB
 ✓ Maintenance: Check_FabriBuddy_Version, Deploy_FabriBuddy
 ✓ Schedule: Load_FabriBuddy_E2E daily at 05:00 UTC
+Running the first scan. This usually takes 10–30 minutes; this cell waits for it.
+  … still scanning (5 min)
+  … still scanning (10 min)
+✓ First scan finished in 14 min
 ✓ Live monitor: FabriBuddy_Live every hour (keeps the Job Monitor current)   ← only with LIVE_MONITOR = True
-✓ First scan started: open Load_FabriBuddy_E2E → View run history (10–30 minutes).
 ```
+
+If the first scan fails, the notebook stops with the scan's error, for example a wrong secret, and
+doesn't schedule the live monitor. Fix the cause ([Troubleshooting](troubleshooting.md)) and run
+the notebook again. On an update the notebook starts a scan and doesn't wait for it.
 
 Your workspace now has three folders:
 

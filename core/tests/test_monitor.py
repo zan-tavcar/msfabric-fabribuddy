@@ -137,3 +137,91 @@ def test_data_dependencies_link_the_item_that_writes_a_table_to_the_items_that_r
     assert ("pl_ingest_d365", "nb_silver_sales") in deps
     assert all(a != b for a, b in deps)
     assert any("fx_rates" in t for t in out["reads"]) and out["writes"]
+
+
+def test_live_waits_for_the_first_scan_instead_of_failing(monkeypatch, tmp_path):
+    """FabriBuddy_Live started before the first scan has saved its state: it waits, then ends cleanly."""
+    import importlib
+
+    live_mod = importlib.import_module("fabribuddy_intenant.live")
+
+    calls = {"load": 0}
+
+    class Conn:
+        def close(self):
+            pass
+
+    def load_state(conn):
+        calls["load"] += 1
+        return None
+
+    clock = {"t": 0.0}
+    monkeypatch.setattr(live_mod.sqldb, "connect", lambda *a, **k: Conn())
+    monkeypatch.setattr(live_mod.sqldb, "load_state", load_state)
+    monkeypatch.setattr(live_mod.time, "monotonic", lambda: clock["t"])
+    monkeypatch.setattr(live_mod.time, "sleep", lambda s: clock.__setitem__("t", clock["t"] + s))
+    monkeypatch.setattr(live_mod, "_configure", lambda work, secret, demo: tmp_path / "state.db")
+
+    result = live_mod.live(
+        sql_server="s", sql_database="d", sql_token="t",
+        tenant_id="t", client_id="c", client_secret="x",
+        minutes=5, workdir=str(tmp_path),
+    )
+    assert result["waited"] is True and result["ticks"] == 0
+    assert calls["load"] == 5  # checked every minute until the run's time was up
+
+
+def test_live_wait_returns_the_state_once_the_scan_has_saved_it(monkeypatch):
+    import importlib
+
+    live_mod = importlib.import_module("fabribuddy_intenant.live")
+
+    states = iter([None, None, b"state"])
+    monkeypatch.setattr(live_mod.sqldb, "load_state", lambda conn: next(states))
+    clock = {"t": 0.0}
+    monkeypatch.setattr(live_mod.time, "monotonic", lambda: clock["t"])
+    monkeypatch.setattr(live_mod.time, "sleep", lambda s: clock.__setitem__("t", clock["t"] + s))
+    state, conn = live_mod._wait_for_scan("conn", "s", "d", lambda: "t", deadline=3600, say=lambda m: None)
+    assert state == b"state" and conn == "conn" and clock["t"] == 120
+
+
+def test_a_wrong_secret_is_reported_as_a_sign_in_problem_not_the_admin_api_setting(monkeypatch):
+    from fabribuddy_core.fabric import client as fc
+    from fabribuddy_core.fabric.credentials import Credentials
+
+    class App:
+        def acquire_token_for_client(self, scopes):
+            return {
+                "error": "invalid_client",
+                "error_description": "AADSTS7000215: Invalid client secret provided. Ensure the secret "
+                "being sent in the request is the client secret value, not the client secret ID.",
+            }
+
+    provider = fc.TokenProvider(Credentials(tenant_id="t", client_id="c", client_secret="wrong"))
+    monkeypatch.setattr(provider, "_application", lambda: App())
+    try:
+        provider.token(fc.SCOPE_POWERBI)
+    except fc.SignInFailed as e:
+        message = str(e)
+    else:
+        raise AssertionError("expected SignInFailed")
+    assert "client secret is wrong" in message and "AADSTS7000215" in message
+    assert "admin APIs" not in message
+    # Still an AccessDenied, so every collector that catches that keeps working.
+    assert issubclass(fc.SignInFailed, fc.AccessDenied)
+
+
+def test_admin_api_problem_names_the_sign_in_fix(monkeypatch):
+    from fabribuddy_core.fabric.client import SignInFailed
+    from fabribuddy_core.services import connections
+
+    class Tenant:
+        is_demo = False
+
+    def fail(creds):
+        raise SignInFailed("The service principal couldn't sign in. The client secret is wrong.")
+
+    monkeypatch.setattr(connections, "credentials_for", lambda t: None)
+    monkeypatch.setattr(connections, "probe_powerbi_admin", fail)
+    problem = connections.admin_api_problem(Tenant())
+    assert problem.startswith("The service principal couldn't sign in") and "admin APIs" not in problem

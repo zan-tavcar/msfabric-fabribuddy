@@ -111,7 +111,7 @@ then says **Live**. If the notebook stops, it says **Live paused**.
   hourly, and each run stays live for 55 minutes. Or schedule the notebook yourself.
 - **Turn it off:** turn off or delete the schedule in **FabriBuddy_Live → Schedule**.
 - **Settings:** `minutes` (55) and `every_seconds` (60) in the notebook. Everything else comes
-  from **Load_FabriBuddy_E2E**, and it needs one scan to have run first.
+  from **Load_FabriBuddy_E2E**. Started before the first scan has finished, it waits for it.
   [All the details](settings.md#live-job-monitor).
 - **Cost:** a small Python notebook session for as long as it runs, so all day when it's
   scheduled hourly. Without it, the monitor is as fresh as the last scan.

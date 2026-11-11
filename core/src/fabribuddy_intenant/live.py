@@ -66,10 +66,17 @@ def live(
         print(f"[{time.monotonic() - started:6.1f}s] {message}", flush=True)
 
     conn = sqldb.connect(sql_server, sql_database, token())
-    state = sqldb.load_state(conn)
-    if not state:
-        conn.close()
-        raise RuntimeError("No scan has run yet. Run Load_FabriBuddy_E2E once, then start this.")
+    state, conn = _wait_for_scan(conn, sql_server, sql_database, token, deadline, say)
+    if state is None:
+        say(
+            "No scan has finished yet, so there is nothing to refresh. The first scan "
+            "(Load_FabriBuddy_E2E) takes 10-30 minutes; the next run of this notebook picks it up."
+        )
+        try:
+            conn.close()
+        except Exception:  # noqa: BLE001
+            pass
+        return {"ticks": 0, "pages": 0, "errors": 0, "waited": True, "seconds": round(time.monotonic() - started, 1)}
     db_file.write_bytes(state)
     _migrate(db_file)
     say(f"Restored the last scan ({len(state) / 2**20:.1f} MB)")
@@ -176,6 +183,30 @@ def live(
         "errors": errors,
         "seconds": round(time.monotonic() - started, 1),
     }
+
+
+def _wait_for_scan(conn, server, database, token, deadline: float, say, poll_seconds: int = 60):
+    """The scanner's saved state; until the first scan has saved it, check again every minute.
+
+    On a first deployment FabriBuddy_Live starts right away, while the first scan is still
+    running. Waiting for it (instead of failing) lets the same run go live as soon as it ends.
+    Returns (state, connection); the state is None if no scan finishes before `deadline`.
+    """
+    said = False
+    while True:
+        try:
+            state = sqldb.load_state(conn)
+        except Exception:  # noqa: BLE001 — the token expired, or the connection dropped
+            conn = _reconnect(conn, server, database, token)
+            state = sqldb.load_state(conn)
+        if state:
+            return state, conn
+        if time.monotonic() + poll_seconds >= deadline:
+            return None, conn
+        if not said:
+            say("Waiting for the first scan (Load_FabriBuddy_E2E) to finish; checking every minute")
+            said = True
+        time.sleep(poll_seconds)
 
 
 def _reconnect(conn, server: str, database: str, token: Callable[[], str]):

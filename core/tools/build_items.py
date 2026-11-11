@@ -248,7 +248,8 @@ only the monitor's pages in `FabriBuddy_DB`. The app picks the change up within 
 
 Runs for `minutes` and stops; schedule it **hourly** (Deploy_FabriBuddy does, with
 `LIVE_MONITOR = True`) and the monitor is live all day. It reads the settings of
-**Load_FabriBuddy_E2E** — there is nothing to set here. It needs one scan to have run.
+**Load_FabriBuddy_E2E** — there is nothing to set here. Started before the first scan has
+finished, it waits for it (checking every minute) and then goes live.
 
 Cost: one small Python session for as long as it runs — all day, when scheduled hourly.
 
@@ -368,7 +369,7 @@ TENANT_NAME = ""          # how the app names your tenant, e.g. "Contoso"
 
 # ── Deployment ─────────────────────────────────────────────────────────────────
 SCHEDULE_DAILY_AT_UTC = "05:00"   # daily scan time; "" for no schedule
-RUN_AFTER_DEPLOY = True           # start the first scan when deployment finishes
+RUN_AFTER_DEPLOY = True           # run a scan now (on a first deployment, wait for it)
 LIVE_MONITOR = False              # Job Monitor live all day: runs FabriBuddy_Live hourly
                                   # (a small Python session, all day — it uses capacity)
 REPOSITORY = "''' + REPOSITORY + '''"
@@ -389,8 +390,9 @@ first deployment and for every update.
 - It creates the SQL database **FabriBuddy_DB** and stores the FabriBuddy release in it.
 - It deploys or updates the notebooks and the pipeline **Load_FabriBuddy_E2E**, sorted into
   folders.
-- It schedules the pipeline and starts the first scan.
-- With `LIVE_MONITOR = True`, it also schedules **FabriBuddy_Live** hourly, which keeps the
+- It schedules the pipeline and runs the first scan. On a first deployment it waits for that
+  scan (usually 10–30 minutes), so any problem shows up here.
+- With `LIVE_MONITOR = True`, it then schedules **FabriBuddy_Live** hourly, which keeps the
   Job Monitor current minute by minute.
 
 **Before you run it:** fill in the service principal in the next cell
@@ -566,23 +568,70 @@ if SCHEDULE_DAILY_AT_UTC:
         }})
         print(f"✓ Schedule: Load_FabriBuddy_E2E daily at {SCHEDULE_DAILY_AT_UTC} UTC")
 
-if LIVE_MONITOR:
+def scan_has_finished_before():
+    """Whether any scan has saved its results in FabriBuddy_DB (false on a first deployment)."""
+    with sql_connect(SQL_SERVER, SQL_DATABASE) as conn:
+        return conn.cursor().execute("SELECT COUNT(*) FROM dbo.fabribuddy_state").fetchone()[0] > 0
+
+
+def run_pipeline(wait):
+    """Start Load_FabriBuddy_E2E; with `wait`, follow the run until it ends."""
+    url = f"{FABRIC_API}/workspaces/{WORKSPACE_ID}/items/{pipeline_id}/jobs/instances?jobType=Pipeline"
+    auth = lambda: {"Authorization": f"Bearer {notebookutils.credentials.getToken('pbi')}"}
+    r = requests.post(url, headers=auth(), timeout=120)
+    if r.status_code >= 400:
+        raise RuntimeError(f"Couldn't start Load_FabriBuddy_E2E ({r.status_code}): {r.text[:400]}")
+    location = r.headers.get("Location")
+    if not wait or not location:
+        print("✓ Scan started: open Load_FabriBuddy_E2E → View run history to follow it.")
+        return None
+    print("Running the first scan. This usually takes 10–30 minutes; this cell waits for it.")
+    started, last_note = time.time(), 0
+    while time.time() - started < 3 * 3600:
+        time.sleep(30)
+        job = requests.get(location, headers=auth(), timeout=60).json()
+        status = job.get("status")
+        minutes = int((time.time() - started) / 60)
+        if status == "Completed":
+            print(f"✓ First scan finished in {minutes} min")
+            return "Completed"
+        if status in ("Failed", "Cancelled", "Deduped"):
+            reason = (job.get("failureReason") or {}).get("message") or status
+            raise RuntimeError(
+                f"The first scan {status.lower()} after {minutes} min:\\n{reason}\\n\\n"
+                "Fix the cause (see Load_FabriBuddy_E2E → View run history for the scan's output, "
+                "and https://zan-tavcar.github.io/msfabric-fabribuddy/troubleshooting/), "
+                "then run this notebook again."
+            )
+        if minutes >= last_note + 5:
+            last_note = minutes
+            print(f"  … still scanning ({minutes} min)")
+    print("The first scan is still running after 3 hours; not waiting any longer. "
+          "Follow it in Load_FabriBuddy_E2E → View run history.")
+    return None
+
+
+def schedule_live():
     live_id = item_id("FabriBuddy_Live.Notebook")
     path = f"/workspaces/{WORKSPACE_ID}/items/{live_id}/jobs/RunNotebook/schedules"
     if fabric("GET", path).get("value"):
         print("✓ Live monitor: already scheduled (left as it is)")
-    else:
-        now = dt.datetime.now(dt.timezone.utc).replace(microsecond=0, second=0)
-        fabric("POST", path, {"enabled": True, "configuration": {
-            "type": "Cron", "interval": 60, "localTimeZoneId": "UTC",
-            "startDateTime": now.strftime("%Y-%m-%dT%H:%M:%S"),
-            "endDateTime": (now + dt.timedelta(days=3650)).strftime("%Y-%m-%dT%H:%M:%S"),
-        }})
-        print("✓ Live monitor: FabriBuddy_Live every hour (keeps the Job Monitor current)")
+        return
+    now = dt.datetime.now(dt.timezone.utc).replace(microsecond=0, second=0)
+    fabric("POST", path, {"enabled": True, "configuration": {
+        "type": "Cron", "interval": 60, "localTimeZoneId": "UTC",
+        "startDateTime": now.strftime("%Y-%m-%dT%H:%M:%S"),
+        "endDateTime": (now + dt.timedelta(days=3650)).strftime("%Y-%m-%dT%H:%M:%S"),
+    }})
+    print("✓ Live monitor: FabriBuddy_Live every hour (keeps the Job Monitor current)")
 
+
+# On a first deployment, wait for the first scan: its errors show up here, and the
+# live monitor only starts once there is something to keep live.
 if RUN_AFTER_DEPLOY:
-    fabric("POST", f"/workspaces/{WORKSPACE_ID}/items/{pipeline_id}/jobs/instances?jobType=Pipeline", wait=False)
-    print("✓ First scan started: open Load_FabriBuddy_E2E → View run history (10–30 minutes).")
+    run_pipeline(wait=not scan_has_finished_before())
+if LIVE_MONITOR:
+    schedule_live()
 '''),
     md("### 6. The FabriBuddy app"),
     code('''

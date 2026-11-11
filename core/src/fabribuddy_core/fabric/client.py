@@ -70,6 +70,37 @@ class AccessDenied(FabricError):
     """
 
 
+class SignInFailed(AccessDenied):
+    """
+    The service principal could not get a token at all: a wrong or expired
+    secret, a wrong client or tenant id. Nothing was asked of any API yet, so
+    this is never a missing tenant setting or workspace role.
+    """
+
+
+# Microsoft Entra error codes that mean "fix the service principal's details",
+# and what to check for each.
+_SIGN_IN_FIXES = {
+    "AADSTS7000215": "The client secret is wrong. Check that the secret in Key Vault is the "
+    "secret's Value (not its Secret ID) and belongs to this app registration.",
+    "AADSTS7000222": "The client secret has expired. Create a new one in the app registration "
+    "and update it in Key Vault.",
+    "AADSTS700016": "No app registration with this client ID exists in this tenant. Check the "
+    "client ID and the tenant ID.",
+    "AADSTS90002": "The tenant ID wasn't found. Check the tenant ID.",
+    "AADSTS900023": "The tenant ID isn't valid. Check the tenant ID.",
+    "AADSTS700024": "The client secret was rejected. Check the secret in Key Vault.",
+}
+
+
+def sign_in_message(error: str, description: str) -> str:
+    """The fix for a failed sign-in, from Entra's error code."""
+    for code, fix in _SIGN_IN_FIXES.items():
+        if code in description:
+            return f"The service principal couldn't sign in. {fix} ({code})"
+    return f"The service principal couldn't sign in: {error} — {description}"
+
+
 class RateLimited(FabricError):
     """429 that survived our retries. Carries the server's own Retry-After."""
 
@@ -124,8 +155,13 @@ class TokenProvider:
         if "access_token" not in result:
             error = result.get("error", "unknown_error")
             description = str(result.get("error_description", ""))[:200]
-            # AADSTS500011 = the SPN has no consent for this audience at all,
-            # which is a different fix from a missing tenant setting.
+            # A wrong secret, client id or tenant id: say which, never "turn
+            # on the admin APIs". AADSTS500011 (no consent for this audience)
+            # is a permissions problem and stays a plain AccessDenied.
+            if error in ("invalid_client", "unauthorized_client", "invalid_request") or any(
+                code in description for code in _SIGN_IN_FIXES
+            ):
+                raise SignInFailed(sign_in_message(error, description))
             raise AccessDenied(
                 f"Could not get a token for {scope}: {error} — {description}"
             )

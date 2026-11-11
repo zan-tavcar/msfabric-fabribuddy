@@ -19,6 +19,7 @@ from ..fabric.client import (
     AccessDenied,
     FabricClient,
     FabricError,
+    SignInFailed,
 )
 from ..fabric.credentials import Credentials
 from ..models import STATUS_CONNECTED, STATUS_ERROR, ConnectedTenant
@@ -59,8 +60,8 @@ def probe_powerbi_admin(creds: Credentials) -> None:
 ADMIN_API_REQUIRED = (
     "Scans need the read-only admin APIs. In the Fabric admin portal, turn on "
     "'Service principals can use read-only admin APIs' for a security group that "
-    "contains this service principal, wait a few minutes, then Re-validate in "
-    "Settings → Connection."
+    "contains this service principal, wait a few minutes, then run "
+    "Load_FabriBuddy_E2E again."
 )
 
 
@@ -75,6 +76,8 @@ def admin_api_problem(tenant: ConnectedTenant) -> str | None:
         return None
     try:
         probe_powerbi_admin(credentials_for(tenant))
+    except SignInFailed as e:
+        return f"{e} The settings are the parameters of Load_FabriBuddy_E2E; the secret is in Key Vault."
     except AccessDenied as e:
         return f"{ADMIN_API_REQUIRED} ({str(e)[:300]})"
     except Exception:  # noqa: BLE001 — a network blip is the scan's to report, not a block

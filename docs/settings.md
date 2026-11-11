@@ -39,8 +39,8 @@ the top of the monitor says **Live**, **Live paused** (the notebook stopped) or 
 **Turn it on:**
 
 - **When you deploy or update:** set `LIVE_MONITOR = True` in **Deploy_FabriBuddy** and run it.
-  It schedules **FabriBuddy_Live** every hour, and each run stays live for 55 minutes. An existing
-  schedule is left as it is.
+  On a first deployment it waits for the first scan to finish, then schedules **FabriBuddy_Live**
+  every hour. Each run stays live for 55 minutes. An existing schedule is left as it is.
 - **Or yourself:** open **FabriBuddy_Live → Schedule** and add an hourly schedule, or run it by
   hand for an hour of live data.
 
@@ -56,7 +56,9 @@ Its own parameters, in the notebook's first code cell:
 | `sql_database_name` | `FabriBuddy_DB` | The database it writes to. |
 
 Everything else (the service principal, the workspaces) comes from **Load_FabriBuddy_E2E**'s
-parameters, and it needs one scan to have run first.
+parameters. It starts from what the last scan saved. If it starts before the first scan has
+finished, as it does right after the first deployment, it waits for that scan, checking every
+minute, and then goes live.
 
 **Cost:** a small Python notebook session for as long as it runs, so all day when it's scheduled
 hourly. It's read-only, like the scan: GET calls only, plus Fabric's read-only
