@@ -111,7 +111,7 @@ an hour earlier.
 <video class="fb-video" autoplay loop muted playsinline poster="assets/video/monitor-demo-poster.webp">
   <source src="assets/video/monitor-demo.mp4" type="video/mp4">
 </video>
-<p class="fb-caption">Every item and its last runs, then one pipeline: its details, its run history step by step, its calendar and busy hours. Then the Gantt and the month.</p>
+<p class="fb-caption">Every item and its last runs, then one pipeline: its details and its execution chain. Then every item's runs over the last 6 hours, and the month.</p>
 
 ![Execution chains: what calls what, for one run](assets/screenshots/monitor-chains.webp){ .fb-shot }
 
