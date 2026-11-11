@@ -108,7 +108,10 @@ notebooks, and the notebooks an orchestrator ran with `runMultiple`. And because
 knows which item writes which table, it tells you when a notebook read a table whose writer failed
 an hour earlier.
 
-![The Job Monitor: every item, its schedule, latest and next run, and its last runs](assets/screenshots/monitor-items.webp){ .fb-shot }
+<video class="fb-video" autoplay loop muted playsinline poster="assets/video/monitor-demo-poster.webp">
+  <source src="assets/video/monitor-demo.mp4" type="video/mp4">
+</video>
+<p class="fb-caption">Every item and its last runs, then one pipeline: its details, its run history step by step, its calendar and busy hours. Then the Gantt and the month.</p>
 
 ![Execution chains: what calls what, for one run](assets/screenshots/monitor-chains.webp){ .fb-shot }
 

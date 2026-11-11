@@ -11,6 +11,11 @@ refresh, Spark job definition and copy job in your tenant, in one app, next to t
 [Try it in the live demo](https://zan-tavcar.github.io/msfabric-fabribuddy/demo/){ .md-button .md-button--primary }
 [Download the deploy notebook](assets/Deploy_FabriBuddy.ipynb){ .md-button download="Deploy_FabriBuddy.ipynb" }
 
+<video class="fb-video" autoplay loop muted playsinline poster="../assets/video/monitor-demo-poster.webp">
+  <source src="../assets/video/monitor-demo.mp4" type="video/mp4">
+</video>
+<p class="fb-caption">Every item and its last runs, then one pipeline: its details, its run history step by step, its calendar and busy hours. Then the Gantt and the month.</p>
+
 ## Why another monitor
 
 The Fabric Monitor hub is fine for "did this one item fail?". It gets hard when the answer depends

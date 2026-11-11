@@ -8,6 +8,11 @@ chain. A run of `pl_master` opens to the child pipeline it invoked, that pipelin
 notebooks, and the notebooks an orchestrator notebook ran with `runMultiple`, `notebook.run` or
 `%run`. Each step shows how long it took against how long it usually takes.
 
+<video class="fb-video" autoplay loop muted playsinline poster="../assets/video/monitor-demo-poster.webp">
+  <source src="../assets/video/monitor-demo.mp4" type="video/mp4">
+</video>
+<p class="fb-caption">Every item and its last runs, then one pipeline: its details, its run history step by step, its calendar and busy hours. Then the Gantt and the month.</p>
+
 !!! info "Daily or live"
     By default the monitor is as fresh as the last daily scan. Turn on
     [live](#live) (`LIVE_MONITOR = True` when you deploy) and new runs show up within about a minute
