@@ -3,7 +3,7 @@ name: Docs and demo
 on:
   push:
     branches: [main]
-    paths: ["docs/**", "overrides/**", "mkdocs.yml", "app/**", "core/**", ".github/workflows/docs.yml"]
+    paths: ["docs/**", "overrides/**", "mkdocs.yml", "app/**", "core/**", "scripts/**", ".github/workflows/docs.yml"]
   workflow_dispatch:
 
 permissions:
@@ -24,6 +24,8 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install "mkdocs-material==9.6.*"
+      # The deploy notebook, served from the site so "Download" saves the file.
+      - run: cp scripts/Deploy_FabriBuddy.ipynb docs/assets/Deploy_FabriBuddy.ipynb
       - run: mkdocs build --strict
       # The live demo: the app on the Contoso demo data, as a static site at /demo/.
       - run: pip install -e core

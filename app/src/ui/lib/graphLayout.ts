@@ -38,7 +38,13 @@ export interface Layout {
   height: number;
 }
 
-export function layout(nodes: GraphNode[], edges: GraphEdge[], lanes: Lane[]): Layout {
+export function layout(
+  nodes: GraphNode[],
+  edges: GraphEdge[],
+  lanes: Lane[],
+  /** Lane order, left to right; the storage layers unless another view says. */
+  order: readonly string[] = LAYER_ORDER,
+): Layout {
   const ids = new Set(nodes.map((n) => n.id));
   const live = edges.filter((e) => ids.has(e.from) && ids.has(e.to) && e.from !== e.to);
   const parents = new Map<string, string[]>();
@@ -68,7 +74,7 @@ export function layout(nodes: GraphNode[], edges: GraphEdge[], lanes: Lane[]): L
   // Columns: lanes in order, each split into its sub-columns.
   const columns: GraphNode[][] = [];
   const laneSpans: { label: string; first: number; count: number }[] = [];
-  LAYER_ORDER.forEach((layer) => {
+  order.forEach((layer) => {
     const members = nodes.filter((n) => n.layer === layer);
     if (members.length === 0) return;
     const count = Math.max(...members.map((n) => depth.get(n.id) ?? 0)) + 1;

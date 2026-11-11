@@ -60,6 +60,9 @@ NB_SILVER_SALES = "b1000000-0000-4000-8000-000000000002"
 NB_GOLD_MODEL = "b1000000-0000-4000-8000-000000000003"
 PL_INGEST = "c1000000-0000-4000-8000-000000000001"
 PL_DAILY = "c1000000-0000-4000-8000-000000000002"
+PL_MASTER = "c1000000-0000-4000-8000-000000000003"
+NB_ORCHESTRATE = "b1000000-0000-4000-8000-000000000004"
+NB_COMMON = "b1000000-0000-4000-8000-000000000005"
 DF_FX_RATES = "d1000000-0000-4000-8000-000000000001"
 SM_SALES = "e1000000-0000-4000-8000-000000000001"
 RPT_SALES = "f1000000-0000-4000-8000-000000000001"
@@ -224,6 +227,9 @@ ARTIFACTS = {
     NB_SILVER_SALES: [("notebook-content.py", "nb_silver_sales.py")],
     NB_GOLD_MODEL: [("notebook-content.py", "nb_gold_model.py")],
     PL_INGEST: [("pipeline-content.json", "pl_ingest_d365.json")],
+    PL_MASTER: [("pipeline-content.json", "pl_master.json")],
+    NB_ORCHESTRATE: [("notebook-content.py", "nb_orchestrate_silver.py")],
+    NB_COMMON: [("notebook-content.py", "nb_common.py")],
     DF_FX_RATES: [
         ("mashup.pq", "df_fx_rates.pq"),
         ("queryMetadata.json", "df_fx_rates.queryMetadata.json"),
@@ -439,6 +445,10 @@ def seed(session: Session, tenant: ConnectedTenant) -> dict:
     _delta_history(session, customer_id, tenant_id, counts)
     _access(session, customer_id, tenant_id, counts)
 
+    from . import demo_jobs
+
+    counts.update(demo_jobs.seed(session, customer_id, tenant_id))
+
     found = findings_engine.run_all(session, customer_id, tenant_id)
     counts.update({f"finding_{k}": v for k, v in found.items()})
 
@@ -550,6 +560,9 @@ def _inventory(session, customer_id, tenant_id, counts) -> None:
     item(WS_DATA, data_ws, PL_INGEST, "DataPipeline", "pl_ingest_d365")
     item(WS_DATA, data_ws, PL_DAILY, "DataPipeline", "pl_daily_sales")
     item(WS_DATA, data_ws, DF_FX_RATES, "Dataflow", "df_fx_rates")
+    item(WS_DATA, data_ws, PL_MASTER, "DataPipeline", "pl_master")
+    item(WS_DATA, data_ws, NB_ORCHESTRATE, "Notebook", "nb_orchestrate_silver")
+    item(WS_DATA, data_ws, NB_COMMON, "Notebook", "nb_common")
 
     for lh_guid, lh_name, tables in (
         (LH_BRONZE, "lh_bronze", BRONZE),

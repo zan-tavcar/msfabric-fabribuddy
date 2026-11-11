@@ -3,21 +3,22 @@ The routes the Fabric App reads — and only those.
 
 The SaaS app (`fabribuddy_core.main`) also serves accounts, billing and the
 operator console; none of that exists in-tenant, so this builds a FastAPI app
-from the three routers the pages use: the Data Catalog, Report Audience and
-scan status. The exporter asks it in-process; nothing listens on a port.
+from the routers the pages use: the Data Catalog, Report Audience, the
+Job Monitor and scan status. The exporter asks it in-process; nothing listens on a port.
 """
 
 from fastapi import FastAPI
 
 
 def build() -> FastAPI:
-    from fabribuddy_core.routers import audience, lineage, scans
+    from fabribuddy_core.routers import audience, lineage, monitor, scans
 
     app = FastAPI(title="FabriBuddy (in-tenant)")
     app.include_router(lineage.router)
     app.include_router(lineage.scoped)
     app.include_router(scans.router)
     app.include_router(audience.router)
+    app.include_router(monitor.router)
     return app
 
 

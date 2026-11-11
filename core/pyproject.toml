@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "fabribuddy-core"
-version = "0.1.1"
+version = "0.2.0"
 description = "FabriBuddy in your own Fabric tenant: the scanner and page logic behind the Data Catalog and Report Audience, run from a notebook."
 readme = "README.md"
 requires-python = ">=3.10"

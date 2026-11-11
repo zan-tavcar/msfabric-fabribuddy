@@ -1,17 +1,18 @@
 /**
- * FabriBuddy, with the open product under the wordmark (Data Catalog or
- * Report Audience).
+ * FabriBuddy, with the open product under the wordmark (Data Catalog,
+ * Report Audience or Job Monitor).
  * The FabriBuddy mark — a magnifier in green over a small bar chart — and the
  * wordmark in two tones, "fabri" in ink and "buddy" in green, as in the logo.
  */
 export function Brand({
   product = "lineage",
 }: {
-  product?: "lineage" | "audience" | "console";
+  product?: "lineage" | "audience" | "monitor" | "console";
 }) {
   const name = {
     lineage: "Data Catalog",
     audience: "Report Audience",
+    monitor: "Job Monitor",
     console: "Console",
   }[product];
   return (

@@ -9,10 +9,12 @@ hide:
 <h1 class="fb-word"><img src="assets/fabribuddy-mark.svg" alt="" class="fb-mark"><span><span class="fb-fabri">fabri</span><span class="fb-buddy">buddy</span></span></h1>
 
 <p class="fb-tagline"><strong>Data lineage for Microsoft Fabric, reverse-engineered from your code.</strong>
-Where every table comes from, the exact lines that write it, and who can see every Power BI report.
+Where every table comes from, the exact lines that write it, who can see every Power BI report,
+and what every pipeline, notebook and refresh did last night.
 Shipped as a Fabric App that runs in your own tenant. Free and open source.</p>
 
 [Deploy FabriBuddy](deploy.md){ .md-button .md-button--primary }
+[Download the deploy notebook](assets/Deploy_FabriBuddy.ipynb){ .md-button download="Deploy_FabriBuddy.ipynb" }
 [Try the live demo](https://zan-tavcar.github.io/msfabric-fabribuddy/demo/){ .md-button }
 [See it on GitHub](https://github.com/zan-tavcar/msfabric-fabribuddy){ .md-button }
 
@@ -65,6 +67,19 @@ ever sent outside your Microsoft tenant.
 
     [Report Audience →](report-audience.md)
 
+-   :material-timeline-clock-outline:{ .lg .middle } **Job Monitor** <span class="fb-new">New</span>
+
+    ---
+
+    - **Every run of every pipeline, notebook, dataflow and semantic model refresh**, with its
+      last runs as bars, on a Gantt and on a calendar.
+    - **Execution chains**: what calls what, down through child pipelines, `runMultiple` and
+      `notebook.run`, with each step's time against its usual time.
+    - **Dependency checks**: items that ran on failed or half-written input, or that only line
+      up by luck.
+
+    [Job Monitor →](job-monitor.md)
+
 -   :material-shield-lock-outline:{ .lg .middle } **Read-only, metadata only**
 
     ---
@@ -84,6 +99,21 @@ ever sent outside your Microsoft tenant.
     [The code →](https://github.com/zan-tavcar/msfabric-fabribuddy)
 
 </div>
+
+## New in 0.2: the Job Monitor
+
+The Fabric Monitor hub lists runs one item at a time. The Job Monitor follows a run down its chain:
+the schedule that started `pl_master`, the child pipeline it invoked, that pipeline's dataflow and
+notebooks, and the notebooks an orchestrator ran with `runMultiple`. And because FabriBuddy already
+knows which item writes which table, it tells you when a notebook read a table whose writer failed
+an hour earlier.
+
+![The Job Monitor: every item, its schedule, latest and next run, and its last runs](assets/screenshots/monitor-items.webp){ .fb-shot }
+
+![Execution chains: what calls what, for one run](assets/screenshots/monitor-chains.webp){ .fb-shot }
+
+[What's new in 0.2 →](whats-new.md) · [The Job Monitor →](job-monitor.md) ·
+[Try it in the demo →](https://zan-tavcar.github.io/msfabric-fabribuddy/demo/)
 
 ## How it works
 
@@ -108,7 +138,7 @@ flowchart LR
    with their own Fabric account, and they see it only if you share it with them.
 
 Deployment takes about 15 minutes: you import one notebook and run it.
-[Deploy FabriBuddy →](deploy.md)
+[Download the notebook](assets/Deploy_FabriBuddy.ipynb){ download="Deploy_FabriBuddy.ipynb" } · [Deploy FabriBuddy →](deploy.md)
 
 !!! warning "A community project"
     FabriBuddy isn't a Microsoft product and comes without warranty or official support. It runs on

@@ -41,7 +41,13 @@ API_ONELAKE_DFS = "https://onelake.dfs.fabric.microsoft.com"
 API_ONELAKE_TABLE = "https://onelake.table.fabric.microsoft.com"
 
 # POST endpoints that only ever read. Anything not on this list is refused.
-_READ_ONLY_POSTS = ("/getdefinition", "/getinfo", "/admin/workspaces/getinfo")
+# A pipeline run's activity runs are read with a POSTed query.
+_READ_ONLY_POSTS = (
+    "/getdefinition",
+    "/getinfo",
+    "/admin/workspaces/getinfo",
+    "/queryactivityruns",
+)
 
 NETWORK_RETRIES = 4
 # Fabric returns 202 for getDefinition and other LROs. A notebook definition

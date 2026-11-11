@@ -15,7 +15,9 @@ What is stored:
   per table / model / report: its page, columns, code, access, its mini graph
   and its "View in lineage" graph; per notebook / pipeline / storage item: its page;
 - Report Audience: status, summary, workspaces, reports, models, people, runs,
-  refresh state, 30 days of activity and licences, permissions.
+  refresh state, 30 days of activity and licences, permissions;
+- Job Monitor: every runnable item, every run, and per item its runs
+  (with what each executed), chain and code.
 
 Filtered variants (the filter bar) are not stored; the in-tenant app hides it.
 """
@@ -66,7 +68,12 @@ STATIC = (
     f"/audience/activity?days={AUDIENCE_DAYS}",
     f"/audience/licenses?days={AUDIENCE_DAYS}",
     "/audience/permissions",
+    "/monitor/jobs",
+    "/monitor/runs",
+    "/monitor/live",
 )
+# What the live refresher rewrites every minute (plus the changed items' pages).
+MONITOR = ("/monitor/jobs", "/monitor/runs", "/monitor/live")
 
 def _seg(value: str) -> str:
     return quote(value, safe="")
@@ -78,7 +85,9 @@ def _selector(node_id: str) -> str:
     return f"+id:{quoted}+"
 
 
-def urls(node_ids: list[str], item_ids: list[str]) -> list[str]:
+def urls(
+    node_ids: list[str], item_ids: list[str], job_ids: list[str] | None = None
+) -> list[str]:
     out = list(STATIC)
     for node_id in node_ids:
         seg = _seg(node_id)
@@ -91,14 +100,19 @@ def urls(node_ids: list[str], item_ids: list[str]) -> list[str]:
             f"/lineage/graph?select={_seg(_selector(node_id))}",
         ]
     out += [f"/lineage/items/{_seg(item_id)}" for item_id in item_ids]
+    out += [f"/monitor/jobs/{_seg(job_id)}" for job_id in job_ids or []]
     return out
 
 
 def collect(
     on_progress: Callable[[int, int], None] | None = None,
+    monitor_items: list[str] | None = None,
 ) -> tuple[dict[str, object], dict]:
     """
     Ask every route; return ({url: answer}, stats).
+
+    `monitor_items` asks only the Job Monitor's pages — the lists, the
+    live answer and those items' pages (the live refresher's minute).
 
     Must run after `fabribuddy_core` is configured (the runner does this).
     """
@@ -106,7 +120,7 @@ def collect(
 
     from fabribuddy_core import config, db, repository
     from fabribuddy_core.lineage import repository as lineage_repository
-    from fabribuddy_core.lineage import views
+    from fabribuddy_core.lineage import monitor, views
     from fabribuddy_core.routers import lineage as lineage_router
 
     from . import api
@@ -133,7 +147,10 @@ def collect(
         tenants = repository.list_tenants(session, config.DEFAULT_CUSTOMER_ID)
         node_ids: list[str] = []
         item_ids: list[str] = []
-        if tenants:
+        job_ids: list[str] = []
+        if tenants and monitor_items is not None:
+            wanted = [*MONITOR, *(f"/monitor/jobs/{_seg(i)}" for i in monitor_items)]
+        elif tenants:
             tenant = tenants[0]
             node_ids = [
                 n.id
@@ -146,11 +163,18 @@ def collect(
                 for i in lineage_repository.list_items(session, tenant.customer_id, tenant.id)
                 if i.item_type in ITEM_PAGE_TYPES
             ]
-        wanted = urls(node_ids, item_ids)
-        answers: dict[str, object] = {
-            "/auth/config": api.AUTH_CONFIG,
-            "/auth/subscription": api.SUBSCRIPTION,
-        }
+            job_ids = monitor.item_ids(shared_context(tenant, session))
+            wanted = urls(node_ids, item_ids, job_ids)
+        else:
+            wanted = urls([], [], [])
+        answers: dict[str, object] = (
+            {}
+            if monitor_items is not None
+            else {
+                "/auth/config": api.AUTH_CONFIG,
+                "/auth/subscription": api.SUBSCRIPTION,
+            }
+        )
         missing: dict[int, int] = {}
         started = time.monotonic()
         client = TestClient(app)

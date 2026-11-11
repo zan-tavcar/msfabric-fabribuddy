@@ -1,7 +1,9 @@
 # The app
 
 The app is a **Fabric App** (preview) named **fabribuddy**, in your FabriBuddy workspace. It shows
-the Data Catalog and Report Audience from what **FabriBuddy_Scan** stored in `FabriBuddy_DB`.
+the Data Catalog, Report Audience and the [Job Monitor](job-monitor.md) from what
+**FabriBuddy_Scan** stored in `FabriBuddy_DB` (and, for the monitor, what **FabriBuddy_Live**
+keeps rewriting when it runs).
 
 It has no server of its own and makes no calls outside Fabric. Every page is one read of the
 database, made as the person viewing it.

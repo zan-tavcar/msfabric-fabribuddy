@@ -15,7 +15,7 @@ creates everything else, then prints the commands that add the app.
 
 ## 1. Run the deploy notebook
 
-1. Download [`scripts/Deploy_FabriBuddy.ipynb`](https://github.com/zan-tavcar/msfabric-fabribuddy/raw/main/scripts/Deploy_FabriBuddy.ipynb).
+1. Download [`Deploy_FabriBuddy.ipynb`](assets/Deploy_FabriBuddy.ipynb){ download="Deploy_FabriBuddy.ipynb" }.
 2. In your workspace: *Import → Notebook → From this computer*, and choose the file.
 3. Open **Deploy_FabriBuddy**. Check that the language at the top is **Python** (not PySpark).
 4. Fill in the first code cell:
@@ -42,9 +42,9 @@ creates everything else, then prints the commands that add the app.
 The notebook prints each step:
 
 ```text
-FabriBuddy 0.1.1 from zan-tavcar/msfabric-fabribuddy@main
+FabriBuddy 0.2.0 from zan-tavcar/msfabric-fabribuddy@main
 ✓ FabriBuddy_DB
-✓ FabriBuddy 0.1.1 stored in FabriBuddy_DB
+✓ FabriBuddy 0.2.0 stored in FabriBuddy_DB
 ✓ FabriBuddy_Scan.Notebook created
 ✓ Check_FabriBuddy_Version.Notebook created
 ✓ Load_FabriBuddy_E2E.DataPipeline created

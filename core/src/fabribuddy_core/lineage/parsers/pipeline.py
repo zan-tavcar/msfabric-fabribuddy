@@ -443,6 +443,13 @@ def _parse(root: dict) -> ParseResult:
                 reference = reference.get("referenceName") or reference.get("id") or ""
             if reference:
                 result.invokes.append(str(reference))
+        elif kind in ("pbisemanticmodelrefresh", "semanticmodelrefresh"):
+            # Fabric's Semantic model refresh activity names the model by id.
+            reference = properties.get("datasetId") or properties.get("semanticModelId") or ""
+            if isinstance(reference, dict):
+                reference = reference.get("value") or ""
+            if reference:
+                result.invokes.append(str(reference))
         elif kind in _SCRIPT_TYPES:
             _script_activity(properties, name, result)
 

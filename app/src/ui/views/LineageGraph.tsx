@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { KeyboardEvent, PointerEvent as ReactPointerEvent } from "react";
+import type { KeyboardEvent, PointerEvent as ReactPointerEvent, ReactNode } from "react";
 import { ArrowRight, Folder, RotateCcw, X } from "lucide-react";
-import type { GraphPayload, Layer } from "../api/types";
+import type { GraphNode, GraphPayload, Layer } from "../api/types";
 import {
   NODE_HEIGHT,
   NODE_WIDTH,
@@ -88,6 +88,12 @@ export function LineageGraph({
   highlightLayer,
   focusId,
   layoutKey,
+  order,
+  renderNode,
+  nodeClassName,
+  nodeTitle,
+  openLabel = "View table details",
+  hint = "Click a table to trace its lineage · drag to rearrange · drag the background to pan",
 }: {
   payload: GraphPayload;
   onPick: (nodeId: string) => void;
@@ -99,10 +105,18 @@ export function LineageGraph({
   focusId?: string | null;
   /** Remember dragged positions under this key; omitted = this session only. */
   layoutKey?: string;
+  /** Lane order (another view's lanes, e.g. the Job Monitor's chains). */
+  order?: readonly string[];
+  /** A card's content; the table card by default. */
+  renderNode?: (node: GraphNode) => ReactNode;
+  nodeClassName?: (node: GraphNode) => string;
+  nodeTitle?: (node: GraphNode) => string;
+  openLabel?: string;
+  hint?: string;
 }) {
   const computed = useMemo(
-    () => layout(payload.nodes, payload.edges, payload.lanes),
-    [payload],
+    () => layout(payload.nodes, payload.edges, payload.lanes, order),
+    [payload, order],
   );
   const [moved, setMoved] = useState<Positions>(() => loadPositions(layoutKey));
   const [dragging, setDragging] = useState<string | null>(null);
@@ -291,7 +305,7 @@ export function LineageGraph({
     <div className="graph-frame">
       <div className="graph-tools">
         <span className="muted-note">
-          Click a table to trace its lineage · drag to rearrange · drag the background to pan
+          {hint}
         </span>
         {movedCount > 0 && (
           <button type="button" className="btn btn-sm" onClick={() => commit({})}>
@@ -383,6 +397,7 @@ export function LineageGraph({
               dim ? "dim" : "",
               lit ? "lit" : "",
               dragging === node.id ? "dragging" : "",
+              nodeClassName?.(node) ?? "",
               liveMoved[node.id] ? "moved" : "",
             ]
               .filter(Boolean)
@@ -396,20 +411,26 @@ export function LineageGraph({
                 onPointerDown={(e) => onNodePointerDown(e, node.id)}
                 onClick={() => onNodeClick(node.id)}
                 onKeyDown={(e) => onNodeKeyDown(e, node.id)}
-                title={`${node.path}\nClick to trace its lineage · drag to move`}
+                title={nodeTitle ? nodeTitle(node) : `${node.path}\nClick to trace its lineage · drag to move`}
                 aria-roledescription="draggable table"
                 aria-pressed={picked === node.id}
               >
-                <span className="name">
-                  <span className={`layer-dot layer-${node.layer}`} aria-hidden="true" />
-                  {node.shortName}
-                </span>
-                <span className="sub">{node.sub}</span>
-                {node.workspace && (
-                  <span className="ws" title={`Workspace: ${node.workspace}`}>
-                    <Folder size={10} strokeWidth={2} aria-hidden="true" />
-                    {node.workspace}
-                  </span>
+                {renderNode ? (
+                  renderNode(node)
+                ) : (
+                  <>
+                    <span className="name">
+                      <span className={`layer-dot layer-${node.layer}`} aria-hidden="true" />
+                      {node.shortName}
+                    </span>
+                    <span className="sub">{node.sub}</span>
+                    {node.workspace && (
+                      <span className="ws" title={`Workspace: ${node.workspace}`}>
+                        <Folder size={10} strokeWidth={2} aria-hidden="true" />
+                        {node.workspace}
+                      </span>
+                    )}
+                  </>
                 )}
               </button>
             );
@@ -421,6 +442,7 @@ export function LineageGraph({
               name={placedById.get(picked)!.node.name}
               upstream={traced.upstream}
               downstream={traced.downstream}
+              openLabel={openLabel}
               onOpen={() => onPick(picked)}
               onClose={() => setPicked(null)}
             />
@@ -439,7 +461,9 @@ function TracePopover({
   downstream,
   onOpen,
   onClose,
+  openLabel,
 }: {
+  openLabel: string;
   at: Placed;
   name: string;
   upstream: number;
@@ -463,7 +487,7 @@ function TracePopover({
         ↑{upstream} ↓{downstream}
       </span>
       <button type="button" className="trace-pop-open" onClick={onOpen} autoFocus>
-        View table details <ArrowRight size={13} aria-hidden="true" />
+        {openLabel} <ArrowRight size={13} aria-hidden="true" />
       </button>
       <button type="button" className="trace-pop-close" aria-label="Clear the trace" onClick={onClose}>
         <X size={12} aria-hidden="true" />

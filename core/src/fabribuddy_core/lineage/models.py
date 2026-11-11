@@ -506,6 +506,55 @@ class JobRun(Base):
     )
 
 
+class JobActivityRun(Base):
+    """
+    One child of a job run: a pipeline activity (a notebook, a child pipeline,
+    a dataflow, a model refresh, a copy…) with its own status and timings, as
+    the pipeline's `queryactivityruns` reports it. Replaced per run, never edited.
+    """
+
+    __tablename__ = "job_activity_run"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    customer_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    tenant_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    job_run_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("job_run.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+
+    activity_run_id: Mapped[str] = mapped_column(String(80), default="")
+    name: Mapped[str] = mapped_column(String(200), default="")
+    activity_type: Mapped[str] = mapped_column(String(60), default="")
+    status: Mapped[str] = mapped_column(String(30), default="")
+    started_at: Mapped[dt.datetime | None] = mapped_column(DateTime, nullable=True)
+    ended_at: Mapped[dt.datetime | None] = mapped_column(DateTime, nullable=True)
+    # The item the activity ran (notebook, pipeline, dataflow, model), when known,
+    # and that item's own run id (a child pipeline's run) for drilling down.
+    target_item_id: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    target_run_guid: Mapped[str] = mapped_column(String(80), default="")
+    error: Mapped[str] = mapped_column(Text, default="")
+
+
+class ItemSchedule(Base):
+    """A schedule on a runnable item (Job Scheduler, or a model's refresh schedule)."""
+
+    __tablename__ = "item_schedule"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    customer_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    tenant_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    item_id: Mapped[str] = mapped_column(
+        String(120), ForeignKey("item.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    schedule_guid: Mapped[str] = mapped_column(String(80), default="")
+    job_type: Mapped[str] = mapped_column(String(40), default="")
+    enabled: Mapped[bool] = mapped_column(Boolean, default=True)
+    # {type: Cron|Daily|Weekly, interval, times, weekdays, startDateTime,
+    #  endDateTime, localTimeZoneId} — the Job Scheduler's own shape.
+    config: Mapped[dict] = mapped_column(JSON, default=dict)
+    collected_at: Mapped[dt.datetime] = mapped_column(DateTime, default=utcnow)
+
+
 class Principal(Base):
     """A user, group or service principal. id is `prn:{graphId or upn}`."""
 

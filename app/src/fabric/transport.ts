@@ -35,8 +35,8 @@ async function readChunks(k: string): Promise<string[]> {
   return rows.map((row) => row.body);
 }
 
-export const fabricTransport: Transport = (path) => {
-  let pending = cache.get(path);
+export const fabricTransport: Transport = (path, opts) => {
+  let pending = opts?.fresh ? undefined : cache.get(path);
   if (!pending) {
     pending = (async () => {
       const chunks = await readChunks(await key(path));
@@ -56,8 +56,12 @@ export const fabricTransport: Transport = (path) => {
  */
 export function localTransport(): Transport {
   let all: Promise<Record<string, string[]>> | null = null;
-  return async (path) => {
-    all ??= fetch(`${import.meta.env.BASE_URL}local-chunks.json`).then((r) => r.json());
+  return async (path, opts) => {
+    // A fresh read re-reads the file: re-run export_local.py and the open
+    // page moves, as the live refresher moves it in Fabric.
+    if (opts?.fresh || !all) {
+      all = fetch(`${import.meta.env.BASE_URL}local-chunks.json`, { cache: "no-store" }).then((r) => r.json());
+    }
     const chunks = (await all)[await key(path)];
     if (!chunks) throw new ApiError(NOT_STORED, 404);
     return answer(await unpack(chunks));

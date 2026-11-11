@@ -30,7 +30,7 @@ a:hover { color: var(--ink); }
 .shell { display: flex; height: 100vh; overflow: hidden; }
 
 .sidebar {
-  width: 280px;
+  width: 292px;
   flex-shrink: 0;
   background: var(--card);
   border-right: 1px solid var(--line);
@@ -1671,22 +1671,24 @@ button.grid-row:hover { background: var(--sunken); }
 /* product switch (sidebar, under the brand) */
 .product-switch {
   display: flex;
-  gap: 4px;
-  margin: 0 14px 12px;
+  gap: 2px;
+  margin: 0 10px 12px;
   padding: 3px;
   background: var(--sunken);
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
 }
 .product-switch button {
-  flex: 1;
+  flex: 1 1 auto;
   border: 0;
   background: transparent;
   color: var(--muted);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
-  padding: 6px 0;
+  padding: 6px 3px;
   border-radius: 6px;
+  white-space: nowrap; /* "Job Monitor" on one line */
+  letter-spacing: -0.01em;
 }
 .product-switch button.active {
   background: var(--card);

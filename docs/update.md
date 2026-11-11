@@ -6,7 +6,7 @@ out. Run it any time.
 ## Updating the scanner
 
 Import the latest
-[`Deploy_FabriBuddy.ipynb`](https://github.com/zan-tavcar/msfabric-fabribuddy/raw/main/scripts/Deploy_FabriBuddy.ipynb)
+[`Deploy_FabriBuddy.ipynb`](assets/Deploy_FabriBuddy.ipynb){ download="Deploy_FabriBuddy.ipynb" }
 over the old one, and **Run all** with the service principal cell left empty.
 
 It downloads the latest release, stores it in `FabriBuddy_DB` and updates the notebooks and the

@@ -228,3 +228,10 @@ code, kbd, pre { font-family: var(--fb-mono); }
   font: 0.65rem/1.5 var(--fb-mono);
   color: var(--fb-slate);
 }
+
+/* "New" tag on the home page's Job Monitor card. */
+.md-typeset .fb-new {
+  display: inline-block; margin-left: 0.35rem; padding: 0.05rem 0.45rem; border-radius: 999px;
+  background: #408870; color: #fff; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.02em;
+  vertical-align: middle;
+}

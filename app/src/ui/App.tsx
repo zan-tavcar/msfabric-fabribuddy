@@ -48,12 +48,29 @@ import {
   type AudienceMeta,
   type AudienceView,
 } from "./audience/AudienceApp";
+import {
+  MONITOR_NAV,
+  LiveBadge,
+  MonitorApp,
+  MonitorTree,
+  type MonitorMeta,
+  type MonitorView,
+} from "./monitor/MonitorApp";
+import { monitorStore } from "./monitor/store";
 
 /**
  * Lineage's pages, Settings ("admin", both products), and "audience" — which
  * shows the Audience page named by `audienceView`.
  */
-type View = "home" | "dag" | "node" | "item" | "admin" | "audience";
+type View = "home" | "dag" | "node" | "item" | "admin" | "audience" | "monitor";
+
+const PRODUCTS: { id: Product; label: string; title: string }[] = [
+  { id: "lineage", label: "Data Catalog", title: "Data Catalog" },
+  { id: "monitor", label: "Job Monitor", title: "Job Monitor" },
+  { id: "audience", label: "Report Audience", title: "Report Audience" },
+];
+const isProduct = (v: string | null): v is Product =>
+  v === "lineage" || v === "audience" || v === "monitor";
 
 const PRODUCT_KEY = "fabribuddy:product";
 /** The Data Catalog page this browser last opened: the overview or the graph. */
@@ -73,13 +90,13 @@ function initialLineagePage(): "home" | "dag" {
  */
 function initialProduct(): Product {
   const fromUrl = new URLSearchParams(window.location.search).get("product");
-  if (fromUrl === "lineage" || fromUrl === "audience") return fromUrl;
+  if (isProduct(fromUrl)) return fromUrl;
   const host = window.location.hostname.toLowerCase();
   if (host.startsWith("audience.")) return "audience";
   if (host.startsWith("lineage.")) return "lineage";
   try {
     const saved = window.localStorage.getItem(PRODUCT_KEY);
-    if (saved === "lineage" || saved === "audience") return saved;
+    if (isProduct(saved)) return saved;
   } catch {
     // storage unavailable (private mode): fall through
   }
@@ -176,6 +193,8 @@ function Workspace({
   const toAccount = signInReturn !== null;
   const [audienceView, setAudienceView] = useState<AudienceView>("overview");
   const [audienceMeta, setAudienceMeta] = useState<AudienceMeta | null>(null);
+  const [monitorView, setMonitorView] = useState<MonitorView>("items");
+  const [monitorMeta, setMonitorMeta] = useState<MonitorMeta | null>(null);
   // The demo opens on the Data Catalog's lineage graph, whatever this browser
   // last used: the graph is what a visitor came to see.
   const demoLanding =
@@ -190,7 +209,9 @@ function Workspace({
         ? "dag"
         : initialProduct() === "audience"
           ? "audience"
-          : initialLineagePage(),
+          : initialProduct() === "monitor"
+            ? "monitor"
+            : initialLineagePage(),
   );
   /** The overview or the graph, remembered for next time. */
   const openLineagePage = (page: "home" | "dag") => {
@@ -245,7 +266,9 @@ function Workspace({
     me?.demo && view !== "admin"
       ? view === "audience"
         ? `audience:${audienceView}`
-        : `lineage:${view}`
+        : view === "monitor"
+          ? `monitor:${monitorView}`
+          : `lineage:${view}`
       : null;
   useEffect(() => {
     if (demoPage) api.demoView(demoPage).catch(() => undefined);
@@ -259,7 +282,13 @@ function Workspace({
       // not persisted; the choice still applies to this session
     }
     const page = initialLineagePage();
-    setView(next === "audience" ? "audience" : locked && page === "dag" ? "home" : page);
+    setView(
+      next === "audience" || next === "monitor"
+        ? next
+        : locked && page === "dag"
+          ? "home"
+          : page,
+    );
   };
   const [adminSection, setAdminSection] = useState<"plan" | undefined>(
     undefined,
@@ -480,16 +509,17 @@ function Workspace({
       <aside className="sidebar">
         <Brand product={product} />
         <div className="product-switch" role="tablist" aria-label="Product">
-          {(["lineage", "audience"] as const).map((p) => (
+          {PRODUCTS.map((p) => (
             <button
-              key={p}
+              key={p.id}
               type="button"
               role="tab"
-              aria-selected={product === p}
-              className={product === p ? "active" : ""}
-              onClick={() => setProduct(p)}
+              aria-selected={product === p.id}
+              className={product === p.id ? "active" : ""}
+              onClick={() => setProduct(p.id)}
+              title={p.title}
             >
-              {p === "lineage" ? "Data Catalog" : "Report Audience"}
+              {p.label}
             </button>
           ))}
         </div>
@@ -520,6 +550,26 @@ function Workspace({
                 )}
               </button>
             </>
+          ) : product === "monitor" ? (
+            MONITOR_NAV.map(({ id, label, icon: Icon }) => (
+              <button
+                key={id}
+                type="button"
+                className={
+                  view === "monitor" && monitorView === id
+                    ? "nav-item active"
+                    : "nav-item"
+                }
+                onClick={() => {
+                  setMonitorView(id);
+                  setView("monitor");
+                  monitorStore.close();
+                }}
+              >
+                <Icon size={17} strokeWidth={1.8} aria-hidden="true" />
+                {label}
+              </button>
+            ))
           ) : (
             AUDIENCE_NAV.map(({ id, label, icon: Icon }) => (
               <button
@@ -545,6 +595,7 @@ function Workspace({
           )}
         </nav>
         <div className="sidebar-rule" />
+        {product === "monitor" && view === "monitor" && !locked && <MonitorTree />}
         {product === "lineage" && tree && (
           <TreeHost
             tree={tree}
@@ -578,6 +629,13 @@ function Workspace({
                     ? ` · ${tree.counts.workspaces} workspaces · ${tree.counts.items} items`
                     : ""}
                 </>
+              ) : product === "monitor" ? (
+                <span className="mon-topmeta">
+                  <LiveBadge compact />
+                  {monitorMeta?.items != null
+                    ? `${monitorMeta.items} runnable items · ${monitorMeta.runs ?? "…"} runs`
+                    : ""}
+                </span>
               ) : (
                 <>
                   Last scan {stamp(audienceMeta?.lastScan ?? null)}
@@ -641,8 +699,8 @@ function Workspace({
                 onClick={() =>
                   setView((v) =>
                     v === "admin"
-                      ? product === "audience"
-                        ? "audience"
+                      ? product === "audience" || product === "monitor"
+                        ? product
                         : "home"
                       : "admin",
                   )
@@ -846,6 +904,24 @@ function Workspace({
                 <Loading what="the graph" />
               )}
             </div>
+          )}
+
+          {view === "monitor" && locked && (
+            <Locked
+              page="Job Monitor"
+              admin={admin}
+              trial={subscription?.planCode === "trial"}
+              onChoosePlan={openPlan}
+            />
+          )}
+
+          {view === "monitor" && !locked && (
+            <MonitorApp
+              key={dataVersion}
+              view={monitorView}
+              onNavigate={setMonitorView}
+              onMeta={setMonitorMeta}
+            />
           )}
 
           {view === "audience" && locked && audienceView !== "overview" && (

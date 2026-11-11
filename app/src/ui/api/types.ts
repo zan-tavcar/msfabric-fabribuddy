@@ -510,7 +510,7 @@ export interface AdminWorkspaces {
 
 export type BillingPeriod = "monthly";
 /** The two FabriBuddy products in this app (Data Catalog, Report Audience). */
-export type Product = "lineage" | "audience";
+export type Product = "lineage" | "audience" | "monitor";
 /** One subscription covers both products; plans differ by workspaces scanned. */
 export type PlanCode = "trial" | "team" | "business" | "enterprise";
 export type SubscriptionStatus = "trialing" | "active" | "past_due" | "canceled";

@@ -184,6 +184,36 @@ def replace_chunks(conn, rows: Iterable[tuple[str, int, str]]) -> int:
     return len(rows)
 
 
+def put_chunks(conn, rows: Iterable[tuple[str, int, str]], keys: Iterable[str]) -> int:
+    """
+    Replace the answers under `keys` only, in one transaction (the live
+    refresher's minute: the monitor's pages, not the whole set).
+    """
+    rows = list(rows)
+    keys = sorted(set(keys))
+    cursor = conn.cursor()
+    try:
+        for i in range(0, len(keys), 500):
+            batch = keys[i : i + 500]
+            cursor.execute(
+                f"DELETE FROM dbo.ui_chunk WHERE k IN ({','.join('?' * len(batch))})", batch
+            )
+        for i in range(0, len(rows), _ROWS_PER_INSERT):
+            batch = rows[i : i + _ROWS_PER_INSERT]
+            placeholders = ",".join(["(?, ?, ?)"] * len(batch))
+            params = [value for row in batch for value in row]
+            cursor.execute(
+                f"INSERT INTO dbo.ui_chunk (k, part, body) VALUES {placeholders}", params
+            )
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        cursor.close()
+    return len(rows)
+
+
 # --- the package --------------------------------------------------------------------
 def save_package(conn, filename: str, version: str, data: bytes) -> None:
     """Keep exactly one wheel: the one the deploy notebook just installed."""

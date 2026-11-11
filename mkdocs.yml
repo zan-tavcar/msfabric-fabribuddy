@@ -1,5 +1,5 @@
 site_name: FabriBuddy
-site_description: A free, open-source Fabric App for Microsoft Fabric and Power BI. Table lineage, the code behind every table, and who can see every report, all inside your own tenant.
+site_description: A free, open-source Fabric App for Microsoft Fabric and Power BI. Table lineage, the code behind every table, who can see every report and a job monitor for every pipeline, notebook and refresh, all inside your own tenant.
 site_url: https://zan-tavcar.github.io/msfabric-fabribuddy/
 repo_url: https://github.com/zan-tavcar/msfabric-fabribuddy
 repo_name: zan-tavcar/msfabric-fabribuddy
@@ -28,6 +28,7 @@ extra_css:
 
 nav:
   - Overview: index.md
+  - What's new in 0.2: whats-new.md
   - Your data stays in your tenant: data-stays-in-your-tenant.md
   - Deploy: deploy.md
   - Service principal: service-principal.md
@@ -36,6 +37,7 @@ nav:
   - Update: update.md
   - Data Catalog: data-catalog.md
   - Report Audience: report-audience.md
+  - Job Monitor: job-monitor.md
   - How it works: how-it-works.md
   - Troubleshooting: troubleshooting.md
   - Contributing: contributing.md
@@ -65,7 +67,7 @@ markdown_extensions:
 
 extra:
   demo_url: https://zan-tavcar.github.io/msfabric-fabribuddy/demo/
-  updated: October 2026
+  updated: November 2026
   generator: false
   social:
     - icon: fontawesome/brands/github

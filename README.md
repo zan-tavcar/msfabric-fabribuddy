@@ -4,7 +4,8 @@
 
 <p align="center">
   <b>Data lineage for Microsoft Fabric, reverse-engineered from your code.</b><br>
-  Where every table comes from, the exact lines that write it, and who can see every Power BI report.<br>
+  Where every table comes from, the exact lines that write it, who can see every Power BI report,<br>
+  and what every pipeline, notebook and refresh did last night.<br>
   Free and open source. A Fabric App that runs in your own tenant.
 </p>
 
@@ -39,6 +40,17 @@
 - **Who can read each table**: workspace roles, OneLake roles, and indirect access through semantic
   models.
 
+**Job Monitor** (new in 0.2)
+- **Every run of every pipeline, notebook, Dataflow Gen2 and semantic model refresh**, with its last
+  runs as bars, on a Gantt and on a calendar.
+- **Execution chains**: what calls what, down through child pipelines, `runMultiple` and
+  `notebook.run`, with each step's status and duration.
+- **Dependency checks**: items that ran on failed or half-written input, or that only line up by luck.
+
+<p align="center">
+  <img src="docs/assets/screenshots/monitor-items.webp" alt="The Job Monitor's Items page" width="100%">
+</p>
+
 **Report Audience**
 - **Who can see each Power BI report**, person by person, with Entra groups opened up to their
   members.
@@ -68,7 +80,8 @@ flowchart LR
 
 About 15 minutes. You need a workspace on a Fabric capacity and a service principal.
 
-1. Import [`scripts/Deploy_FabriBuddy.ipynb`](./scripts/Deploy_FabriBuddy.ipynb) into the workspace,
+1. [Download `Deploy_FabriBuddy.ipynb`](https://zan-tavcar.github.io/msfabric-fabribuddy/assets/Deploy_FabriBuddy.ipynb)
+   (also in [`scripts/`](./scripts/Deploy_FabriBuddy.ipynb)), import it into the workspace,
    fill in the service principal, and choose **Run all**.
 2. Run the five commands its last cell prints, to add the app.
 3. Open **fabribuddy** in the workspace.
@@ -83,6 +96,8 @@ About 15 minutes. You need a workspace on a Fabric capacity and a service princi
 | [Deploy](https://zan-tavcar.github.io/msfabric-fabribuddy/deploy/) | First deployment, step by step |
 | [Service principal](https://zan-tavcar.github.io/msfabric-fabribuddy/service-principal/) | The app registration, tenant setting and roles |
 | [The app](https://zan-tavcar.github.io/msfabric-fabribuddy/app/) | Adding the Fabric App and sharing it |
+| [Job Monitor](https://zan-tavcar.github.io/msfabric-fabribuddy/job-monitor/) | Runs, chains, schedules and dependency checks |
+| [What's new in 0.2](https://zan-tavcar.github.io/msfabric-fabribuddy/whats-new/) | The Job Monitor, in screenshots |
 | [Settings](https://zan-tavcar.github.io/msfabric-fabribuddy/settings/) | What is scanned, and when |
 | [Update](https://zan-tavcar.github.io/msfabric-fabribuddy/update/) | Getting a new version |
 | [Troubleshooting](https://zan-tavcar.github.io/msfabric-fabribuddy/troubleshooting/) | Common errors and their fixes |

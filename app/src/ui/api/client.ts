@@ -57,11 +57,20 @@ export class ApiError extends Error {
  * Fabric App) answers every GET from what its scan notebook stored. Unset in
  * the SaaS, where every request goes to /api.
  */
-export type Transport = (path: string) => Promise<unknown>;
+export type Transport = (path: string, opts?: { fresh?: boolean }) => Promise<unknown>;
 let transport: Transport | null = null;
 
 export function setTransport(next: Transport | null): void {
   transport = next;
+}
+
+/**
+ * A read that skips every cache: the Job Monitor's live polling. The
+ * in-tenant transport reads the stored answer again; the SaaS asks again.
+ */
+export async function reqFresh<T>(path: string): Promise<T> {
+  if (transport) return (await transport(path, { fresh: true })) as T;
+  return req<T>(path, { cache: "no-store" });
 }
 
 export async function req<T>(path: string, init?: RequestInit): Promise<T> {

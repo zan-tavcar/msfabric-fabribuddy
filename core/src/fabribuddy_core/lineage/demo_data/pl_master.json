@@ -1,0 +1,52 @@
+{
+  "properties": {
+    "description": "Nightly Contoso sales load: D365 ingest, silver, gold, then the Sales Model.",
+    "activities": [
+      {
+        "name": "Ingest_D365",
+        "type": "InvokePipeline",
+        "dependsOn": [],
+        "typeProperties": {
+          "operationType": "InvokeFabricPipeline",
+          "pipelineId": "c1000000-0000-4000-8000-000000000001",
+          "workspaceId": "11111111-1111-4111-8111-111111111111",
+          "waitOnCompletion": true
+        }
+      },
+      {
+        "name": "Silver_Orchestration",
+        "type": "TridentNotebook",
+        "dependsOn": [
+          { "activity": "Ingest_D365", "dependencyConditions": ["Completed"] }
+        ],
+        "typeProperties": {
+          "notebookId": "b1000000-0000-4000-8000-000000000004",
+          "workspaceId": "11111111-1111-4111-8111-111111111111"
+        }
+      },
+      {
+        "name": "Gold_Model",
+        "type": "TridentNotebook",
+        "dependsOn": [
+          { "activity": "Silver_Orchestration", "dependencyConditions": ["Succeeded"] }
+        ],
+        "typeProperties": {
+          "notebookId": "b1000000-0000-4000-8000-000000000003",
+          "workspaceId": "11111111-1111-4111-8111-111111111111"
+        }
+      },
+      {
+        "name": "Refresh_Sales_Model",
+        "type": "PBISemanticModelRefresh",
+        "dependsOn": [
+          { "activity": "Gold_Model", "dependencyConditions": ["Succeeded"] }
+        ],
+        "typeProperties": {
+          "datasetId": "e1000000-0000-4000-8000-000000000001",
+          "groupId": "22222222-2222-4222-8222-222222222222",
+          "waitOnCompletion": true
+        }
+      }
+    ]
+  }
+}

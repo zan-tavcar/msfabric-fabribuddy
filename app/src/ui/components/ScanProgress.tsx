@@ -2,7 +2,12 @@ import { useEffect, useState } from "react";
 import { CheckCircle2, Loader2, TriangleAlert } from "lucide-react";
 import type { ScanPass, ScanProgress } from "../api/types";
 
-const PRODUCT_NAMES = { lineage: "Data Catalog", audience: "Report Audience" } as const;
+// The monitor is read by the Data Catalog pass (its jobs step); it has no steps of its own.
+const PRODUCT_NAMES = {
+  lineage: "Data Catalog",
+  audience: "Report Audience",
+  monitor: "Job Monitor",
+} as const;
 
 /** 75 -> "1m 15s"; 3725 -> "1h 2m". */
 export function duration(seconds: number | null | undefined): string {

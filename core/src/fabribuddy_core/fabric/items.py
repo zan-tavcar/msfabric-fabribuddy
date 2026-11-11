@@ -12,7 +12,15 @@ Everything here is a plain GET, so it stays inside the read-only contract.
 
 import logging
 
-from .client import API_FABRIC, SCOPE_FABRIC, AccessDenied, FabricClient, FabricError
+from .client import (
+    API_FABRIC,
+    API_POWERBI,
+    SCOPE_FABRIC,
+    SCOPE_POWERBI,
+    AccessDenied,
+    FabricClient,
+    FabricError,
+)
 
 log = logging.getLogger("lineage.items")
 
@@ -65,6 +73,92 @@ def list_job_instances(
     return client.paged(
         f"{API_FABRIC}/workspaces/{workspace_guid}/items/{item_guid}/jobs/instances",
         SCOPE_FABRIC,
+    )
+
+
+def query_activity_runs(
+    client: FabricClient,
+    workspace_guid: str,
+    run_guid: str,
+    *,
+    updated_after: str,
+    updated_before: str,
+) -> list[dict]:
+    """
+    The activity runs of one pipeline run — each notebook, child pipeline,
+    dataflow or copy it executed, with status, start, end and error.
+
+    `POST /v1/workspaces/{ws}/datapipelines/pipelineruns/{jobId}/queryactivityruns`
+    is a query (nothing changes); the client allows it by name. Pages follow
+    `continuationToken`, which may come back with an empty page in between.
+    """
+    url = (
+        f"{API_FABRIC}/workspaces/{workspace_guid}/datapipelines/pipelineruns/"
+        f"{run_guid}/queryactivityruns"
+    )
+    body: dict = {
+        "filters": [],
+        "orderBy": [{"orderBy": "ActivityRunStart", "order": "ASC"}],
+        "lastUpdatedAfter": updated_after,
+        "lastUpdatedBefore": updated_before,
+    }
+    out: list[dict] = []
+    seen: set[str] = set()
+    for _ in range(50):
+        response = client.request("POST", url, SCOPE_FABRIC, json_body=body, allow_write=True)
+        if response.status_code in (401, 403):
+            raise AccessDenied(f"{url} returned {response.status_code}")
+        if response.status_code != 200:
+            raise FabricError(f"{url} returned {response.status_code}: {response.text[:300]}")
+        payload = response.json()
+        out.extend(payload.get("value") or [])
+        token = payload.get("continuationToken")
+        if not token or token in seen:
+            break
+        seen.add(token)
+        body["continuationToken"] = token
+    return out
+
+
+# The Job Scheduler's job type per item type, for reading its schedules.
+SCHEDULE_JOB_TYPES = {
+    "DataPipeline": "Pipeline",
+    "Notebook": "RunNotebook",
+    "Dataflow": "Refresh",
+    "SparkJobDefinition": "sparkjob",
+    "CopyJob": "CopyJob",
+}
+
+
+def list_schedules(
+    client: FabricClient, workspace_guid: str, item_guid: str, job_type: str
+) -> list[dict]:
+    """`GET …/items/{id}/jobs/{jobType}/schedules`: enabled flag and configuration."""
+    return client.paged(
+        f"{API_FABRIC}/workspaces/{workspace_guid}/items/{item_guid}/jobs/{job_type}/schedules",
+        SCOPE_FABRIC,
+    )
+
+
+def list_model_refreshes(
+    client: FabricClient, workspace_guid: str, model_guid: str, top: int = 100
+) -> list[dict]:
+    """A semantic model's refresh history (Power BI), newest first."""
+    payload = client.get_json(
+        f"{API_POWERBI}/groups/{workspace_guid}/datasets/{model_guid}/refreshes",
+        SCOPE_POWERBI,
+        params={"$top": top},
+    )
+    return payload.get("value") or []
+
+
+def get_model_refresh_schedule(
+    client: FabricClient, workspace_guid: str, model_guid: str
+) -> dict:
+    """A semantic model's refresh schedule: days, times, enabled, time zone."""
+    return client.get_json(
+        f"{API_POWERBI}/groups/{workspace_guid}/datasets/{model_guid}/refreshSchedule",
+        SCOPE_POWERBI,
     )
 
 

@@ -7,3 +7,6 @@ core/src/*.egg-info/
 core/dist/
 .pytest_cache/
 site/
+
+# A copy of scripts/Deploy_FabriBuddy.ipynb, made when the docs are built.
+docs/assets/Deploy_FabriBuddy.ipynb

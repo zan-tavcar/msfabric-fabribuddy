@@ -6,6 +6,7 @@ Write FabriBuddy's Fabric items and its deploy notebook.
     src/FabriBuddy_Scan.Notebook/           the scanner (Python notebook)
     src/Check_FabriBuddy_Version.Notebook/  installed vs latest release
     src/Load_FabriBuddy_E2E.DataPipeline/   the orchestration pipeline you schedule
+    src/FabriBuddy_Live.Notebook/           keeps the Job Monitor current (optional)
     scripts/Deploy_FabriBuddy.ipynb         imported once; deploys and updates the above
     config/deployment_config.yaml           item order and workspace folders
 
@@ -27,6 +28,7 @@ IDS = {
     "FabriBuddy_Scan.Notebook": "f1b5c0de-0000-4000-8000-000000000002",
     "Check_FabriBuddy_Version.Notebook": "f1b5c0de-0000-4000-8000-000000000003",
     "Load_FabriBuddy_E2E.DataPipeline": "f1b5c0de-0000-4000-8000-000000000004",
+    "FabriBuddy_Live.Notebook": "f1b5c0de-0000-4000-8000-000000000005",
 }
 
 # The pipeline's parameters — the whole configuration, as in FUAM's Load_FUAM_Data_E2E.
@@ -240,6 +242,79 @@ print("FabriBuddy is up to date." if installed == latest else
 '''),
 ]
 
+LIVE = [
+    md(f"""
+# FabriBuddy_Live
+
+Keeps the **Job Monitor** current between scans: every minute it reads what is running
+(and what a schedule is about to start) **read-only as the service principal**, and rewrites
+only the monitor's pages in `FabriBuddy_DB`. The app picks the change up within half a minute.
+
+Runs for `minutes` and stops; schedule it **hourly** (Deploy_FabriBuddy does, with
+`LIVE_MONITOR = True`) and the monitor is live all day. It reads the settings of
+**Load_FabriBuddy_E2E** — there is nothing to set here. It needs one scan to have run.
+
+Cost: one small Python session for as long as it runs — all day, when scheduled hourly.
+
+[Documentation]({DOCS}/job-monitor/#live)
+"""),
+    code('''minutes = 55          # how long this run keeps the monitor live
+every_seconds = 60    # how often it reads
+sql_database_name = "FabriBuddy_DB"
+''', parameters=True),
+    code(BOOTSTRAP),
+    code('''
+# Install the FabriBuddy release that Deploy_FabriBuddy stored in the database.
+_, SQL_SERVER, SQL_DATABASE = find_sql_database(sql_database_name)
+if not SQL_SERVER:
+    raise RuntimeError(f"No SQL database called {sql_database_name!r} here. Run Deploy_FabriBuddy first.")
+with sql_connect(SQL_SERVER, SQL_DATABASE) as conn:
+    row = conn.cursor().execute("SELECT name, version, data FROM dbo.fabribuddy_package").fetchone()
+if row is None:
+    raise RuntimeError("The FabriBuddy package isn't in the database. Run Deploy_FabriBuddy first.")
+wheel = f"/tmp/{row[0]}"
+with open(wheel, "wb") as f:
+    f.write(bytes(row[2]))
+pip_install(wheel)
+print(f"FabriBuddy {row[1]}")
+'''),
+    code('''
+# The settings live in Load_FabriBuddy_E2E's parameters; the secret in Azure Key Vault.
+import base64
+
+pipeline = next((i for i in fabric("GET", f"/workspaces/{WORKSPACE_ID}/items?type=DataPipeline").get("value", [])
+                 if i["displayName"] == "Load_FabriBuddy_E2E"), None)
+if pipeline is None:
+    raise RuntimeError("Load_FabriBuddy_E2E isn't in this workspace. Run Deploy_FabriBuddy first.")
+definition = fabric("POST", f"/workspaces/{WORKSPACE_ID}/items/{pipeline['id']}/getDefinition")
+content = next(json.loads(base64.b64decode(p["payload"])) for p in definition["definition"]["parts"]
+               if p["path"] == "pipeline-content.json")
+settings = {k: v.get("defaultValue") for k, v in content["properties"].get("parameters", {}).items()}
+if settings.get("demo"):
+    raise RuntimeError("Load_FabriBuddy_E2E runs the demo: there is nothing live to read.")
+missing = [n for n in ("key_vault_url", "sp_tenant_id", "sp_client_id") if not settings.get(n)]
+if missing:
+    raise ValueError(f"Set {', '.join(missing)} in the parameters of Load_FabriBuddy_E2E.")
+client_secret = notebookutils.credentials.getSecret(settings["key_vault_url"], settings.get("sp_secret_name") or "fabribuddy-sp-secret")
+'''),
+    code('''
+# Live: read what is running, rewrite the monitor's pages, every `every_seconds`.
+from fabribuddy_intenant import live
+
+result = live(
+    tenant_id=settings["sp_tenant_id"],
+    client_id=settings["sp_client_id"],
+    client_secret=client_secret,
+    sql_server=SQL_SERVER,
+    sql_database=SQL_DATABASE,
+    sql_token=sql_token,   # a function: the token is renewed when it expires
+    minutes=minutes,
+    every_seconds=every_seconds,
+)
+print(json.dumps(result, indent=2))
+'''),
+]
+
 
 def pipeline() -> dict:
     return {
@@ -299,6 +374,8 @@ TENANT_NAME = ""          # how the app names your tenant, e.g. "Contoso"
 # ── Deployment ─────────────────────────────────────────────────────────────────
 SCHEDULE_DAILY_AT_UTC = "05:00"   # daily scan time; "" for no schedule
 RUN_AFTER_DEPLOY = True           # start the first scan when deployment finishes
+LIVE_MONITOR = False              # Job Monitor live all day: runs FabriBuddy_Live hourly
+                                  # (a small Python session, all day — it uses capacity)
 REPOSITORY = "''' + REPOSITORY + '''"
 BRANCH = "main"
 GITHUB_TOKEN = ""         # only while the repository is private
@@ -319,6 +396,8 @@ first deployment and for every update.
 - It deploys or updates the notebooks and the pipeline **Load_FabriBuddy_E2E**, sorted into
   folders.
 - It schedules the pipeline and starts the first scan.
+- With `LIVE_MONITOR = True`, it also schedules **FabriBuddy_Live** hourly, which keeps the
+  Job Monitor current minute by minute.
 
 **Before you run it:** fill in the service principal in the next cell
 ([prerequisites]({DOCS}/deploy/#before-you-start)).
@@ -494,6 +573,20 @@ if SCHEDULE_DAILY_AT_UTC:
         }})
         print(f"✓ Schedule: Load_FabriBuddy_E2E daily at {SCHEDULE_DAILY_AT_UTC} UTC")
 
+if LIVE_MONITOR:
+    live_id = item_id("FabriBuddy_Live.Notebook")
+    path = f"/workspaces/{WORKSPACE_ID}/items/{live_id}/jobs/RunNotebook/schedules"
+    if fabric("GET", path).get("value"):
+        print("✓ Live monitor: already scheduled (left as it is)")
+    else:
+        now = dt.datetime.now(dt.timezone.utc).replace(microsecond=0, second=0)
+        fabric("POST", path, {"enabled": True, "configuration": {
+            "type": "Cron", "interval": 60, "localTimeZoneId": "UTC",
+            "startDateTime": now.strftime("%Y-%m-%dT%H:%M:%S"),
+            "endDateTime": (now + dt.timedelta(days=3650)).strftime("%Y-%m-%dT%H:%M:%S"),
+        }})
+        print("✓ Live monitor: FabriBuddy_Live every hour (keeps the Job Monitor current)")
+
 if RUN_AFTER_DEPLOY:
     fabric("POST", f"/workspaces/{WORKSPACE_ID}/items/{pipeline_id}/jobs/instances?jobType=Pipeline", wait=False)
     print("✓ First scan started: open Load_FabriBuddy_E2E → View run history (10–30 minutes).")
@@ -523,9 +616,14 @@ CONFIG = {
         "FabriBuddy_Scan.Notebook",
         "Check_FabriBuddy_Version.Notebook",
         "Load_FabriBuddy_E2E.DataPipeline",
+        "FabriBuddy_Live.Notebook",
     ],
     "folders": {
-        "Scan": ["Load_FabriBuddy_E2E.DataPipeline", "FabriBuddy_Scan.Notebook"],
+        "Scan": [
+            "Load_FabriBuddy_E2E.DataPipeline",
+            "FabriBuddy_Scan.Notebook",
+            "FabriBuddy_Live.Notebook",
+        ],
         "Storage": ["FabriBuddy_DB.SQLDatabase"],
         "Maintenance": ["Check_FabriBuddy_Version.Notebook", "Deploy_FabriBuddy.Notebook"],
     },
@@ -548,6 +646,9 @@ def main() -> None:
     write(src / "Check_FabriBuddy_Version.Notebook" / ".platform",
           platform("Notebook", "Check_FabriBuddy_Version", "Compares the installed FabriBuddy release with the latest."))
     write(src / "Check_FabriBuddy_Version.Notebook" / "notebook-content.ipynb", notebook(CHECK))
+    write(src / "FabriBuddy_Live.Notebook" / ".platform",
+          platform("Notebook", "FabriBuddy_Live", "Keeps the Job Monitor current between scans."))
+    write(src / "FabriBuddy_Live.Notebook" / "notebook-content.ipynb", notebook(LIVE))
     write(src / "Load_FabriBuddy_E2E.DataPipeline" / ".platform",
           platform("DataPipeline", "Load_FabriBuddy_E2E", "FabriBuddy's orchestration pipeline: schedule this one."))
     write(src / "Load_FabriBuddy_E2E.DataPipeline" / "pipeline-content.json", pipeline())

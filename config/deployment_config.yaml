@@ -5,10 +5,12 @@ items:
 - FabriBuddy_Scan.Notebook
 - Check_FabriBuddy_Version.Notebook
 - Load_FabriBuddy_E2E.DataPipeline
+- FabriBuddy_Live.Notebook
 folders:
   Scan:
   - Load_FabriBuddy_E2E.DataPipeline
   - FabriBuddy_Scan.Notebook
+  - FabriBuddy_Live.Notebook
   Storage:
   - FabriBuddy_DB.SQLDatabase
   Maintenance:
@@ -19,3 +21,4 @@ ids:
   FabriBuddy_Scan.Notebook: f1b5c0de-0000-4000-8000-000000000002
   Check_FabriBuddy_Version.Notebook: f1b5c0de-0000-4000-8000-000000000003
   Load_FabriBuddy_E2E.DataPipeline: f1b5c0de-0000-4000-8000-000000000004
+  FabriBuddy_Live.Notebook: f1b5c0de-0000-4000-8000-000000000005
