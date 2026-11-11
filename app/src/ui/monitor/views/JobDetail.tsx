@@ -97,13 +97,16 @@ export function JobDetail({
           <Field label="Next run">
             {next ? (
               <>
-                <span className="mon-head-big">{when(next)}</span> <span className="muted-note">{relative(next)}</span>
+                <span className="mon-next-run">
+                  <span className="mon-head-big">{when(next)}</span>
+                  <span className="muted-note">{relative(next)}</span>
+                </span>
               </>
             ) : (
               "—"
             )}
           </Field>
-          <Field label="Last 5 runs">
+          <Field label="Last 5 runs" wide>
             <LastFive runs={page.runs.slice(0, 5)} onRun={(id) => { onRun(id); onTab("graph"); }} />
           </Field>
           <Field label="Run by">
@@ -145,9 +148,9 @@ export function JobDetail({
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({ label, wide, children }: { label: string; wide?: boolean; children: React.ReactNode }) {
   return (
-    <div className="mon-field">
+    <div className={`mon-field${wide ? " mon-field-wide" : ""}`}>
       <span className="mon-field-label">{label}</span>
       <span className="mon-field-value">{children}</span>
     </div>
