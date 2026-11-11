@@ -23,7 +23,7 @@ notebooks, and the notebooks an orchestrator notebook ran with `runMultiple`, `n
 
 ## Pages
 
-Every page except Execution chains has the same filters: workspace, item type, status, role in a chain and a keyword.
+Every page except Execution chains has the same filters: workspace, item type, item, status, role in a chain and a keyword.
 Items, Gantt and Failures also have a time range (last 6 hours, 24 hours, 7 days or 30 days), and
 Schedules has the same choices looking ahead. Your picks follow you from page to page.
 

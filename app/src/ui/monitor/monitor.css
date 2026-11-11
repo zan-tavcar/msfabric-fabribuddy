@@ -712,3 +712,6 @@ button.mon-bar[tabindex="0"] { cursor: pointer; }
 .mon-chain-head-name { display: flex; flex-direction: column; min-width: 0; }
 .mon-chain-head-name h3 { margin: 0; font-size: 17px; }
 .mon-side-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+
+/* Five filters (workspace, type, item, status, role) on one row. */
+.mon-filters .filterbar-fields { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }

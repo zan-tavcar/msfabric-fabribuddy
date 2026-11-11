@@ -37,7 +37,7 @@ run history on top of that.
 
 Every runnable item in one list: its schedule, or what runs it; its latest and next run; its runs and
 failures in the last 6 hours to 30 days; its usual duration and success rate; and its run history as
-bars, where the height is the duration and the colour is the status. Filter by workspace, item type,
+bars, where the height is the duration and the colour is the status. Filter by workspace, item type, item,
 status, role in a chain or keyword, and the filters follow you to every page.
 
 ## Execution chains: what calls what

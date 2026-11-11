@@ -1,6 +1,6 @@
 /**
- * The filters every monitor page shares: workspace, item type, status, role in
- * a chain, a keyword, and a time range. One set, kept in the store, so moving
+ * The filters every monitor page shares: workspace, item type, item, status,
+ * role in a chain, a keyword, and a time range. One set, kept in the store, so moving
  * from Runs to the Gantt to the Calendar keeps what was picked.
  */
 import type { JobSummary, ListedRun, RunStatus } from "./api";
@@ -21,13 +21,15 @@ export const rangeLabel = (r: Range) => RANGES.find((x) => x.id === r)!.label.re
 export interface Filters {
   workspaces: string[];
   types: string[];
+  /** Item names. */
+  items: string[];
   statuses: string[];
   roles: string[];
   q: string;
   range: Range;
 }
 
-export const NO_FILTERS: Filters = { workspaces: [], types: [], statuses: [], roles: [], q: "", range: "7d" };
+export const NO_FILTERS: Filters = { workspaces: [], types: [], items: [], statuses: [], roles: [], q: "", range: "7d" };
 
 export const ROLE = {
   orchestrator: "Runs other items",
@@ -49,6 +51,7 @@ export const statusName = (s: RunStatus | null | undefined) => (s ? STATUS_LABEL
 export function keepJob(j: JobSummary, f: Filters): boolean {
   if (f.workspaces.length && !f.workspaces.includes(j.workspace)) return false;
   if (f.types.length && !f.types.includes(j.typeLabel)) return false;
+  if (f.items.length && !f.items.includes(j.name)) return false;
   if (f.roles.length && !roleOf(j).some((r) => f.roles.includes(r))) return false;
   const needle = f.q.trim().toLowerCase();
   if (needle && !`${j.name} ${j.workspace} ${j.typeLabel}`.toLowerCase().includes(needle)) return false;
@@ -67,7 +70,7 @@ export function inRange(r: Pick<ListedRun, "startedAt" | "endedAt">, t0: number,
 }
 
 export function isFiltered(f: Filters): boolean {
-  return Boolean(f.workspaces.length || f.types.length || f.statuses.length || f.roles.length || f.q.trim());
+  return Boolean(f.workspaces.length || f.types.length || f.items.length || f.statuses.length || f.roles.length || f.q.trim());
 }
 
 /** Per-item numbers over the range, from the runs list. */
