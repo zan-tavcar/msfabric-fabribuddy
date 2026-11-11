@@ -12,7 +12,7 @@ notebooks, and the notebooks an orchestrator notebook ran with `runMultiple`, `n
 
 ## Pages
 
-Every page has the same filters: workspace, item type, status, role in a chain and a keyword.
+Every page except Execution chains has the same filters: workspace, item type, status, role in a chain and a keyword.
 Items, Gantt and Failures also have a time range (last 6 hours, 24 hours, 7 days or 30 days), and
 Schedules has the same choices looking ahead. Your picks follow you from page to page.
 
@@ -20,7 +20,7 @@ Schedules has the same choices looking ahead. Your picks follow you from page to
 |---|---|
 | **Items** | Every runnable item in one list: its schedule (or what runs it), the status and time of its latest run, its next run, its runs and failures in the range, its usual duration and success rate, and its run history as bars (height is duration, colour is status). |
 | **Gantt** | Runs on a time axis. Over 6 or 24 hours each run is a row, and a run started by another sits under it. Over 7 or 30 days each item is one lane with all its runs on it, so drift and failed nights stand out. Planned runs show as outlines. |
-| **Execution chains** | What calls what. Pick a chain (an orchestrator and everything it runs) and see one of its runs as a graph: the schedule, the pipelines, their activities, the notebooks and refreshes they start, each with its status and duration. Below are the dependency checks for every chain, and a collapsible map of the whole estate drawn like the Data Catalog's lineage. |
+| **Execution chains** | What calls what. Pick a chain (an orchestrator and everything it runs) and see its latest run as a graph: the pipelines, their activities, the notebooks and refreshes they start, each with its status and duration. Older runs are in the run picker. Click a box for its details. Below are the dependency checks for every chain, and a collapsible map of the whole estate drawn like the Data Catalog's lineage. This page has no filters: the chain you pick is the filter. |
 | **Calendar** | A month of runs: each day's outcome, its failed items and what the schedules will start. Next to it, the picked day hour by hour, with each run (or chain) as a block. |
 | **Schedules** | Every schedule, its next runs over the next 6 hours to 30 days, each item's last 5 runs, and items started twice. |
 | **Failures** | Failed runs grouped by item and error, so ten nights of the same failure is one row marked *10×*. |
@@ -34,7 +34,8 @@ Schedules has the same choices looking ahead. Your picks follow you from page to
 ### An item
 
 Open an item to see its schedule, latest run, next run, last five runs (duration and status) and
-what runs it at the top. Below that are its tabs:
+what runs it at the top, and **Open in Fabric** to go to the item in the Fabric portal. Below that are
+its tabs:
 
 - **Overview:** the item's details (type, workspace, ID, what starts it, its last error, the tables
   it reads and writes, its usual duration) and its last runs.
@@ -49,6 +50,10 @@ what runs it at the top. Below that are its tabs:
 ![An item: header, last five runs and details](assets/screenshots/monitor-item.webp){ .fb-shot }
 
 ![The run history: one column per run, one row per step](assets/screenshots/monitor-history.webp){ .fb-shot }
+
+**Open in Fabric** is also on the picked chain and on a task's side panel in the run graph, for the
+item that task ran. On the demo the button is greyed out, because the demo's items don't exist in
+Fabric.
 
 The sidebar lists workspaces and their items by type. Click a workspace to filter every page to it.
 Click an item to open it. The dots show each item's latest run, and a pulse means it's running now.

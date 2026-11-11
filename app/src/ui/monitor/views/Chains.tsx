@@ -5,7 +5,7 @@ import type { JobRun, JobSummary, JobsPayload, LivePayload, RunStatus, RunsPaylo
 import { DataTable, type Column } from "../../audience/components/DataTable";
 import { Empty, Loading } from "../../components/primitives";
 import { LineageGraph } from "../../views/LineageGraph";
-import { MonitorFilters } from "../components/MonitorFilters";
+import { OpenInFabric } from "../../components/OpenInFabric";
 import { StatusBadge } from "../components/Status";
 import { TypeIcon } from "../components/TypeIcon";
 import { dataNeighbours, dependencyChecks, descendantsOf, type Check } from "../deps";
@@ -55,21 +55,19 @@ export function Chains({
   const now = useNow(15_000);
   const running = useMemo(() => new Set((live?.running ?? []).map((r) => r.item.id)), [live]);
   const byId = useMemo(() => new Map(all.jobs.map((j) => [j.id, j])), [all]);
-  const kept = useMemo(() => new Set(jobs.jobs.map((j) => j.id)), [jobs]);
 
   // A chain starts at an item that runs others and that nothing runs.
   const roots = useMemo(
     () =>
       all.jobs
         .filter((j) => j.children.length)
-        .filter((j) => kept.has(j.id) || [...descendantsOf(j.id, byId)].some((d) => kept.has(d)))
         .sort(
           (a, b) =>
             Number(a.parents.some((p) => byId.has(p.id))) - Number(b.parents.some((p) => byId.has(p.id))) ||
             descendantsOf(b.id, byId).size - descendantsOf(a.id, byId).size ||
             a.name.localeCompare(b.name),
         ),
-    [all, byId, kept],
+    [all, byId],
   );
   const [rootId, setRootId] = useState<string | null>(null);
   const root = (rootId && roots.find((r) => r.id === rootId)) || roots[0] || null;
@@ -85,13 +83,11 @@ export function Chains({
       <header className="page-head">
         <h2 className="page-head-title">Execution chains</h2>
         <p className="page-head-sub">
-          What calls what. Pick an orchestrator — a pipeline, or a notebook that runs notebooks with{" "}
-          <code>notebook.run</code>, <code>runMultiple</code> or <code>%run</code> — to see one of its runs as a graph: every
+          What calls what. Pick a chain — a pipeline, or a notebook that runs notebooks with{" "}
+          <code>notebook.run</code>, <code>runMultiple</code> or <code>%run</code> — to see its latest run as a graph: every
           activity, what it ran, how long it took. Click a box for its details.
         </p>
       </header>
-
-      <MonitorFilters jobs={all} count={`${roots.length} chain${roots.length === 1 ? "" : "s"}`} statusLabel="Last run status" ranges={false} />
 
       {!roots.length ? (
         <Empty title="No chains">
@@ -129,6 +125,22 @@ export function Chains({
               );
             })}
           </div>
+          {root && (
+            <section className="mon-chain-head">
+              <TypeIcon type={root.type} size={18} />
+              <div className="mon-chain-head-name">
+                <h3>{root.name}</h3>
+                <span className="muted-note">
+                  {root.typeLabel} · {root.workspace}
+                </span>
+              </div>
+              <span className="mon-head-spacer" />
+              <button type="button" className="btn" onClick={() => onOpen(root.id)}>
+                Open item
+              </button>
+              <OpenInFabric link={root} />
+            </section>
+          )}
           {root && <ChainGraph key={root.id} root={root} onOpen={onOpen} />}
         </>
       )}
@@ -160,7 +172,7 @@ export function Chains({
         <summary>
           <GitFork size={15} aria-hidden="true" /> The whole estate: every item, what starts it and whose data it reads
         </summary>
-        <EstateGraph all={all} jobs={jobs} running={running} now={now} onOpen={onOpen} />
+        <EstateGraph all={all} jobs={all} running={running} now={now} onOpen={onOpen} />
       </details>
     </div>
   );
@@ -175,12 +187,8 @@ function ChainGraph({ root, onOpen }: { root: JobSummary; onOpen: (id: string, r
   const [runId, setRunId] = useState<string | null>(null);
   if (error) return <p className="banner banner-danger">{error}</p>;
   if (!page) return <Loading what="the chain" />;
-  // A run still going hasn't reached its later steps: show the last finished one first.
-  const run: JobRun | null =
-    page.runs.find((r) => r.runId === runId) ??
-    page.runs.find((r) => r.status !== "running" && r.status !== "queued") ??
-    page.runs[0] ??
-    null;
+  // The latest run, running or not; the run picker reaches older ones.
+  const run: JobRun | null = page.runs.find((r) => r.runId === runId) ?? page.runs[0] ?? null;
   return <GraphTab page={page} run={run} onRun={setRunId} onOpen={onOpen} />;
 }
 

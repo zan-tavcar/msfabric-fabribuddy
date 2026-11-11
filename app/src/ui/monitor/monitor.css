@@ -706,3 +706,9 @@ button.mon-bar[tabindex="0"] { cursor: pointer; }
 .mon-step-inner { padding: 0 8px 8px 8px; }
 .mon-step.nested .mon-step-main { padding: 6px 8px; }
 .mon-chainx-live { border: 0; background: none; padding: 0; cursor: pointer; }
+
+/* Execution chains: the picked chain, with its links. */
+.mon-chain-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.mon-chain-head-name { display: flex; flex-direction: column; min-width: 0; }
+.mon-chain-head-name h3 { margin: 0; font-size: 17px; }
+.mon-side-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }

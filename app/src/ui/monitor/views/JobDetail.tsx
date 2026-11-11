@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, CalendarClock, Check, Copy, ExternalLink, WrapText } from "lucide-react";
+import { ArrowLeft, CalendarClock, Check, Copy, WrapText } from "lucide-react";
+import { OpenInFabric } from "../../components/OpenInFabric";
 import { Empty, Loading } from "../../components/primitives";
 import { DataTable, type Column } from "../../audience/components/DataTable";
 import type { JobPayload, JobRun, ListedRun, RunChild } from "../api";
@@ -11,7 +12,7 @@ import { StatusBadge } from "../components/Status";
 import { TypeIcon } from "../components/TypeIcon";
 import { STATUS_LABEL, duration, nextRun, relative, runSeconds, shortId, when } from "../lib";
 import { ganttRows, stepStats, treeOrder } from "../runtree";
-import { type DetailTab, useJob, useNow } from "../store";
+import { type DetailTab, useJob, useMonitor, useNow } from "../store";
 
 export type { DetailTab };
 
@@ -66,15 +67,7 @@ export function JobDetail({
           {job.latest && <StatusBadge status={job.latest.status} />}
           <span className="muted-note">{job.workspace}</span>
           <span className="mon-head-spacer" />
-          {job.fabricUrl ? (
-            <a className="btn btn-sm" href={job.fabricUrl} target="_blank" rel="noreferrer">
-              <ExternalLink size={13} aria-hidden="true" /> Open in Fabric
-            </a>
-          ) : job.fabricDemo ? (
-            <span className="muted-note" title="The demo tenant's items don't exist in Fabric">
-              Demo item — not in Fabric
-            </span>
-          ) : null}
+          <OpenInFabric link={job} />
         </div>
         <div className="mon-head-grid">
           <Field label="Schedule">
@@ -629,6 +622,8 @@ function RunPanel({ run }: { run: JobRun }) {
 }
 
 function TaskPanel({ task, onOpen }: { task: RunChild; onOpen: (id: string, runId?: string) => void }) {
+  const { jobs } = useMonitor();
+  const item = task.item ? jobs?.jobs.find((j) => j.id === task.item!.id) : undefined;
   return (
     <div className="stack-sm">
       <div className="mon-side-head">
@@ -669,11 +664,14 @@ function TaskPanel({ task, onOpen }: { task: RunChild; onOpen: (id: string, runI
         </p>
       )}
       {task.error && <pre className="mon-error-box">{task.error}</pre>}
-      {task.item && task.runId && (
-        <button type="button" className="btn btn-sm" onClick={() => onOpen(task.item!.id, task.runId!)}>
-          Open this run of {task.item.name}
-        </button>
-      )}
+      <div className="mon-side-actions">
+        {task.item && task.runId && (
+          <button type="button" className="btn btn-sm" onClick={() => onOpen(task.item!.id, task.runId!)}>
+            Open this run of {task.item.name}
+          </button>
+        )}
+        {item && <OpenInFabric link={item} />}
+      </div>
     </div>
   );
 }

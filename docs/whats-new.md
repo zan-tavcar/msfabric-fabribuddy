@@ -39,7 +39,7 @@ status, role in a chain or keyword, and the filters follow you to every page.
 
 ![Execution chains](assets/screenshots/monitor-chains.webp){ .fb-shot }
 
-Pick an orchestrator and see one of its runs as a graph: the schedule that started it, the pipeline's
+Pick a chain and see its latest run as a graph: the schedule that started it, the pipeline's
 activities, the child pipelines they invoked, the dataflows, notebooks and model refreshes those
 started, and the notebooks run inside a notebook with `runMultiple`, `notebook.run` or `%run`. Each
 step has its own status and duration.
@@ -86,6 +86,8 @@ the app within about a minute and a half. [More on live](job-monitor.md#live).
 
 ## Also in 0.2
 
+- **0.2.1:** *Open in Fabric* on the item page, the picked chain and a task's side panel. Execution
+  chains has no filter bar any more (pick a chain instead) and opens on the latest run.
 - The products are now called **Data Catalog**, **Job Monitor** and **Report Audience**.
 - Lineage follows schema-level shortcuts to their source tables, and `runMultiple` DAGs and
   `notebook.run` arguments into child notebooks (from 0.1.1).
