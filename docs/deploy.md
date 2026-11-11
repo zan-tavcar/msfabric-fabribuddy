@@ -36,6 +36,7 @@ creates everything else, then prints the commands that add the app.
     | `TENANT_NAME` | `""` | How the app names your tenant, for example `"Contoso"`. |
     | `SCHEDULE_DAILY_AT_UTC` | `"05:00"` | The daily scan time, in UTC. `""` means no schedule. |
     | `RUN_AFTER_DEPLOY` | `True` | Start the first scan when deployment finishes. |
+    | `LIVE_MONITOR` | `False` | Keep the [Job Monitor live](job-monitor.md#live): schedules **FabriBuddy_Live** hourly, so runs show up within about a minute and a half instead of after the next daily scan. It keeps a small Python session running all day, so it uses capacity. |
 
 5. Choose **Run all**.
 
@@ -48,10 +49,12 @@ FabriBuddy 0.2.1 from zan-tavcar/msfabric-fabribuddy@main
 ✓ FabriBuddy_Scan.Notebook created
 ✓ Check_FabriBuddy_Version.Notebook created
 ✓ Load_FabriBuddy_E2E.DataPipeline created
-✓ Scan: Load_FabriBuddy_E2E, FabriBuddy_Scan
+✓ FabriBuddy_Live.Notebook created
+✓ Scan: Load_FabriBuddy_E2E, FabriBuddy_Scan, FabriBuddy_Live
 ✓ Storage: FabriBuddy_DB
 ✓ Maintenance: Check_FabriBuddy_Version, Deploy_FabriBuddy
 ✓ Schedule: Load_FabriBuddy_E2E daily at 05:00 UTC
+✓ Live monitor: FabriBuddy_Live every hour (keeps the Job Monitor current)   ← only with LIVE_MONITOR = True
 ✓ First scan started: open Load_FabriBuddy_E2E → View run history (10–30 minutes).
 ```
 
@@ -59,7 +62,7 @@ Your workspace now has three folders:
 
 | Folder | Items |
 |---|---|
-| **Scan** | `Load_FabriBuddy_E2E` (pipeline, scheduled) and `FabriBuddy_Scan` (notebook) |
+| **Scan** | `Load_FabriBuddy_E2E` (pipeline, scheduled), `FabriBuddy_Scan` (notebook) and `FabriBuddy_Live` (notebook, scheduled hourly only with `LIVE_MONITOR = True`) |
 | **Storage** | `FabriBuddy_DB` (SQL database) |
 | **Maintenance** | `Check_FabriBuddy_Version` and `Deploy_FabriBuddy` (notebooks) |
 

@@ -8,6 +8,12 @@ chain. A run of `pl_master` opens to the child pipeline it invoked, that pipelin
 notebooks, and the notebooks an orchestrator notebook ran with `runMultiple`, `notebook.run` or
 `%run`. Each step shows how long it took against how long it usually takes.
 
+!!! info "Daily or live"
+    By default the monitor is as fresh as the last daily scan. Turn on
+    [live](#live) (`LIVE_MONITOR = True` when you deploy) and new runs show up within about a minute
+    and a half: **FabriBuddy_Live** reads Fabric every 60 seconds, and the app checks for changes
+    every 30 seconds.
+
 ![Items: every runnable item with its schedule, latest and next run and its last runs as bars](assets/screenshots/monitor-items.webp){ .fb-shot }
 
 ## Pages
@@ -98,8 +104,10 @@ then says **Live**. If the notebook stops, it says **Live paused**.
 
 - **Turn it on:** run `Deploy_FabriBuddy` with `LIVE_MONITOR = True`. It schedules FabriBuddy_Live
   hourly, and each run stays live for 55 minutes. Or schedule the notebook yourself.
-- **Settings:** none of its own. It uses the service principal and settings of
-  **Load_FabriBuddy_E2E** and needs one scan to have run first.
+- **Turn it off:** turn off or delete the schedule in **FabriBuddy_Live → Schedule**.
+- **Settings:** `minutes` (55) and `every_seconds` (60) in the notebook. Everything else comes
+  from **Load_FabriBuddy_E2E**, and it needs one scan to have run first.
+  [All the details](settings.md#live-job-monitor).
 - **Cost:** a small Python notebook session for as long as it runs, so all day when it's
   scheduled hourly. Without it, the monitor is as fresh as the last scan.
 - **Read-only,** like the scan: the same service principal and GET-only calls (plus the read-only

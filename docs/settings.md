@@ -20,6 +20,49 @@ now, choose **Run**.
 | `demo` | `false` | Load the fictional Contoso tenant instead of scanning yours. |
 | `sql_database_name` | `FabriBuddy_DB` | The database the scan writes to. |
 
+## Live Job Monitor { #live-job-monitor }
+
+By default the [Job Monitor](job-monitor.md) shows the runs the daily scan read. To see runs as
+they happen, the **FabriBuddy_Live** notebook (in the *Scan* folder) refreshes only the monitor's
+pages in `FabriBuddy_DB`, every minute.
+
+There are two refresh intervals:
+
+| | Every | |
+|---|---|---|
+| **FabriBuddy_Live** reads Fabric | 60 seconds | It reads what's running, what those runs start next, and what a schedule is about to start, plus a rotating slice of everything else. |
+| **The app** reads `FabriBuddy_DB` | 30 seconds | Always, on every Job Monitor page. With the live notebook off, it just finds nothing new until the next scan. |
+
+So a new run or a finished step shows in the app within about a minute and a half. The badge at
+the top of the monitor says **Live**, **Live paused** (the notebook stopped) or **Last scan**
+(live is off).
+
+**Turn it on:**
+
+- **When you deploy or update:** set `LIVE_MONITOR = True` in **Deploy_FabriBuddy** and run it.
+  It schedules **FabriBuddy_Live** every hour, and each run stays live for 55 minutes. An existing
+  schedule is left as it is.
+- **Or yourself:** open **FabriBuddy_Live → Schedule** and add an hourly schedule, or run it by
+  hand for an hour of live data.
+
+**Turn it off:** open **FabriBuddy_Live → Schedule** and turn the schedule off or delete it.
+Running Deploy_FabriBuddy with `LIVE_MONITOR = False` doesn't remove it.
+
+Its own parameters, in the notebook's first code cell:
+
+| Parameter | Default | |
+|---|---|---|
+| `minutes` | `55` | How long one run keeps the monitor live. Keep it under the schedule's interval. |
+| `every_seconds` | `60` | How often it reads Fabric. Lower means fresher, and more API calls. |
+| `sql_database_name` | `FabriBuddy_DB` | The database it writes to. |
+
+Everything else (the service principal, the workspaces) comes from **Load_FabriBuddy_E2E**'s
+parameters, and it needs one scan to have run first.
+
+**Cost:** a small Python notebook session for as long as it runs, so all day when it's scheduled
+hourly. It's read-only, like the scan: GET calls only, plus Fabric's read-only
+`queryactivityruns`.
+
 ## Choosing workspaces
 
 Pick whole chains: the workspaces where notebooks and pipelines run, the lakehouses and warehouses

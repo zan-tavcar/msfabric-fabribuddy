@@ -18,6 +18,9 @@ pipeline. These are **kept**:
 
 The next scan uses the new version. To get it now, run **Load_FabriBuddy_E2E**.
 
+To turn on the [live Job Monitor](settings.md#live-job-monitor) while you update, set
+`LIVE_MONITOR = True` before **Run all**.
+
 ## Updating the app
 
 When a release changes the app, update it from your copy of the repository:
